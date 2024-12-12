@@ -151,12 +151,11 @@ public abstract class BedrockEntityRenderer<T extends Entity> extends EntityRend
         normals[0] = new Vector3f(x2, y1, z1).sub(x1, y1, z1).cross(new Vector3f(x1, y2, z2).sub(x1, y1, z1)).normalize();
         normals[1] = new Vector3f(x1, y1, z1).sub(x2, y1, z1).cross(new Vector3f(x1, y2, z2).sub(x2, y1, z1)).normalize();
         normals[2] = new Vector3f(x1, y1, z1).sub(x1, y2, z2).cross(new Vector3f(x2, y1, z1).sub(x1, y2, z2)).normalize();
-        normals[3] = new Vector3f(x2, y1, z1).sub(x2, y2, z2).cross(new Vector3f(x1, y2, z2).sub(x2, y2, z2)).normalize().mul(-1);
-        normals[3] = new Vector3f(normals[2].z, normals[2].y, 0);
+        normals[3] = new Vector3f(x2, y1, z1).sub(x2, y2, z2).cross(new Vector3f(x1, y2, z2).sub(x2, y2, z2)).normalize();
         // Define four vertices of the face
         vertex(vertexConsumer, pose, x1, y1, z1, 0, 0, packedLight, normals[0]);
-        vertex(vertexConsumer, pose, x2, y1, z1, 1, 0, packedLight, normals[2]);
-        vertex(vertexConsumer, pose, x1, y2, z2, 0, 1, packedLight, normals[1]);
+        vertex(vertexConsumer, pose, x2, y1, z1, 1, 0, packedLight, normals[1]);
+        vertex(vertexConsumer, pose, x1, y2, z2, 0, 1, packedLight, normals[2]);
         vertex(vertexConsumer, pose, x2, y2, z2, 1, 1, packedLight, normals[3]);
     }
 
