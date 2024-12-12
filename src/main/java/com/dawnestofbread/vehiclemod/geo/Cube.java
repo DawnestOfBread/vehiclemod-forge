@@ -11,6 +11,10 @@ import org.joml.Vector3f;
 import java.util.ArrayList;
 import java.util.List;
 
+/*
+ * Parses the json data and builds a cube out of quads
+ * This class doesn't provide a raw json
+*/
 public class Cube {
     private Vec3 origin = Vec3.ZERO;
     private Vec3 pivot = Vec3.ZERO;
@@ -27,22 +31,27 @@ public class Cube {
 
         if (cubeO.has("pivot")) {
             JsonArray pivot = cubeO.get("pivot").getAsJsonArray();
-            this.pivot = new Vec3(pivot.get(0).getAsDouble() / 16, pivot.get(1).getAsDouble() / 16, pivot.get(2).getAsDouble() / 16);
+            this.pivot = new Vec3(-pivot.get(0).getAsDouble() / 16, pivot.get(1).getAsDouble() / 16, pivot.get(2).getAsDouble() / 16);
         }
 
         if (cubeO.has("rotation")) {
             JsonArray rotation = cubeO.get("rotation").getAsJsonArray();
-            this.rotation = new Vec3(rotation.get(0).getAsDouble() / 16, rotation.get(1).getAsDouble() / 16, rotation.get(2).getAsDouble() / 16);
+            this.rotation = new Vec3(Math.toRadians(-rotation.get(0).getAsDouble()), Math.toRadians(-rotation.get(1).getAsDouble()), Math.toRadians(rotation.get(2).getAsDouble()));
         }
 
         if (cubeO.has("size")) {
             JsonArray size = cubeO.get("size").getAsJsonArray();
             this.size = new Vec3(size.get(0).getAsDouble() / 16, size.get(1).getAsDouble() / 16, size.get(2).getAsDouble() / 16);
+            this.origin = new Vec3(-(this.origin.x + this.size.x), this.origin.y, this.origin.z);
         }
 
         for (Direction dir : Direction.values()) {
-            JsonObject uv = cubeO.get("uv").getAsJsonObject().get(dir.getName().toLowerCase()).getAsJsonObject();
-            this.uv.add(new UV(uv, dir));
+            if (cubeO.has("uv")) {
+                if (cubeO.get("uv").getAsJsonObject().has(dir.getName().toLowerCase())) {
+                    JsonObject uv = cubeO.get("uv").getAsJsonObject().get(dir.getName().toLowerCase()).getAsJsonObject();
+                    this.uv.add(new UV(uv, dir));
+                }
+            }
 
             float x1 = (float) this.origin.x();
             float y1 = (float) this.origin.y();
@@ -60,19 +69,19 @@ public class Cube {
                            Direction face) {
         Vertex[] vertices = new Vertex[4];
         switch (face) {
-            case NORTH -> { // Z+
+            case NORTH -> {
                 vertices[0] = new Vertex(new Vector3f(x1, y1, z2), 0, 0);
                 vertices[1] = new Vertex(new Vector3f(x2, y1, z2), 0, 0);
                 vertices[2] = new Vertex(new Vector3f(x2, y2, z2), 0, 0);
                 vertices[3] = new Vertex(new Vector3f(x1, y2, z2), 0, 0);
             }
-            case SOUTH -> { // Z-
+            case SOUTH -> {
                 vertices[0] = new Vertex(new Vector3f(x2, y1, z1), 0, 0);
                 vertices[1] = new Vertex(new Vector3f(x1, y1, z1), 0, 0);
                 vertices[2] = new Vertex(new Vector3f(x1, y2, z1), 0, 0);
                 vertices[3] = new Vertex(new Vector3f(x2, y2, z1), 0, 0);
             }
-            case WEST -> { // X-
+            case WEST -> {
                 vertices[0] = new Vertex(new Vector3f(x1, y1, z1), 0, 0);
                 vertices[1] = new Vertex(new Vector3f(x1, y1, z2), 0, 0);
                 vertices[2] = new Vertex(new Vector3f(x1, y2, z2), 0, 0);
@@ -84,13 +93,13 @@ public class Cube {
                 vertices[2] = new Vertex(new Vector3f(x2, y2, z1), 0, 0);
                 vertices[3] = new Vertex(new Vector3f(x2, y2, z2), 0, 0);
             }
-            case UP -> { // Y+
+            case UP -> {
                 vertices[0] = new Vertex(new Vector3f(x1, y2, z1), 0, 0);
                 vertices[1] = new Vertex(new Vector3f(x2, y2, z1), 0, 0);
                 vertices[2] = new Vertex(new Vector3f(x2, y2, z2), 0, 0);
                 vertices[3] = new Vertex(new Vector3f(x1, y2, z2), 0, 0);
             }
-            case DOWN -> { // Y-
+            case DOWN -> {
                 vertices[0] = new Vertex(new Vector3f(x1, y1, z2), 0, 0);
                 vertices[1] = new Vertex(new Vector3f(x2, y1, z2), 0, 0);
                 vertices[2] = new Vertex(new Vector3f(x2, y1, z1), 0, 0);
@@ -98,7 +107,7 @@ public class Cube {
             }
             default -> throw new IllegalArgumentException("Invalid face");
         }
-        return Quad.build(vertices, 0, 0, 0, 0, 16, 16, true, face);
+        return Quad.build(vertices, 0, 0, 0, 0, 16, 16, false, face);
     }
 
     public List<Quad> getQuads() {

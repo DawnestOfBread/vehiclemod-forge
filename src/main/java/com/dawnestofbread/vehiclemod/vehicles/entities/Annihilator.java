@@ -3,7 +3,7 @@ package com.dawnestofbread.vehiclemod.vehicles.entities;
 import com.dawnestofbread.vehiclemod.WheeledVehicle;
 import com.dawnestofbread.vehiclemod.utils.Curve;
 import com.dawnestofbread.vehiclemod.utils.SeatData;
-import com.dawnestofbread.vehiclemod.utils.WheelData;
+import com.dawnestofbread.vehiclemod.utils.WheelProperties;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -36,7 +36,7 @@ public class Annihilator extends WheeledVehicle {
         this.length = 5.0625;
 
         // Purely visual, should be set up to not clip into the tyres
-        this.maxBodyPitch = 5;
+        this.maxBodyPitch = 10;
         this.maxBodyRoll = 10;
 
         // Really important values here, you should try to get them right
@@ -124,7 +124,7 @@ public class Annihilator extends WheeledVehicle {
         Wheels = new ArrayList<>(4);
 
         for (int i1 = 0; i1 < 4; i1++) {
-            Wheels.add(i1, new WheelData());
+            Wheels.add(i1, new WheelProperties());
         }
 
         // Divide this by 16, because it works better and results in more realistic proportions

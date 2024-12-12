@@ -5,6 +5,9 @@ import com.google.gson.JsonObject;
 import net.minecraft.core.Direction;
 import net.minecraft.world.phys.Vec2;
 
+/*
+ * Parses a quad's UV map
+*/
 public class UV {
     private final Direction face;
     private final Vec2 uvPos;

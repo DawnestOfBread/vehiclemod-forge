@@ -5,11 +5,13 @@ import com.mojang.math.Axis;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
-import software.bernie.geckolib.cache.object.GeoCube;
 
+/*
+ * Helper class for rendering
+ * The method names should be self-explanatory
+*/
 public class RenderUtils {
     public static void preparePoseStackForBone(PoseStack poseStack, Bone bone) {
-        //translatePoseToBone(poseStack, bone);
         translatePoseToPivot(poseStack, bone);
         rotatePose(poseStack, bone);
         scalePoseToBone(poseStack, bone);
@@ -19,10 +21,6 @@ public class RenderUtils {
     public static void translatePoseToPivot(PoseStack poseStack, Cube cube) {
         Vec3 pivot = cube.getPivot();
         poseStack.translate(pivot.x(), pivot.y(), pivot.z());
-    }
-
-    public static void translatePoseToBone(PoseStack poseStack, Bone bone) {
-        poseStack.translate(-bone.getPivot().x(), bone.getPivot().y(), bone.getPivot().z());
     }
 
     public static void translatePoseToPivot(PoseStack poseStack, Bone bone) {

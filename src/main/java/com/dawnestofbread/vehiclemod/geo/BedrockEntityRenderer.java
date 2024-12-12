@@ -2,13 +2,11 @@ package com.dawnestofbread.vehiclemod.geo;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import org.jetbrains.annotations.NotNull;
@@ -16,8 +14,10 @@ import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
-import software.bernie.geckolib.cache.object.GeoBone;
 
+/*
+ * Base renderer for all the vehicles based on GeoRenderer, created because of problems caused by GeckoLib
+ */
 public abstract class BedrockEntityRenderer<T extends Entity> extends EntityRenderer<T> {
 
     private final BedrockModel model;
@@ -75,10 +75,7 @@ public abstract class BedrockEntityRenderer<T extends Entity> extends EntityRend
                             int packedOverlay, LinearColour tint) {
         poseStack.pushPose();
         RenderUtils.preparePoseStackForBone(poseStack, bone);
-        renderBoneCubes(poseStack, bone, buffer, packedLight, packedOverlay, tint);
-
-//        if (!isReRender)
-//            applyRenderLayersForBone(poseStack, animatable, bone, renderType, bufferSource, buffer, partialTick, packedLight, packedOverlay);
+        renderCubesOfBone(poseStack, bone, buffer, packedLight, packedOverlay, tint);
 
         renderChildBones(poseStack, bone, renderType, bufferSource, buffer, isReRender, partialTick, packedLight, packedOverlay, tint);
         poseStack.popPose();
@@ -86,13 +83,13 @@ public abstract class BedrockEntityRenderer<T extends Entity> extends EntityRend
 
     private void renderChildBones(PoseStack poseStack, Bone bone, RenderType renderType, MultiBufferSource bufferSource, VertexConsumer buffer,
                                   boolean isReRender, float partialTick, int packedLight, int packedOverlay, LinearColour tint) {
-        for (Bone childBone : model.getChildBones(bone.getName())) {
+        for (Bone childBone : model.getChildrenOfBone(bone.getName())) {
             renderBone(poseStack, childBone, renderType, bufferSource, buffer, isReRender, partialTick, packedLight, packedOverlay, tint);
         }
     }
 
-    private void renderBoneCubes(PoseStack poseStack, Bone bone, VertexConsumer buffer, int packedLight,
-                                 int packedOverlay, LinearColour tint) {
+    private void renderCubesOfBone(PoseStack poseStack, Bone bone, VertexConsumer buffer, int packedLight,
+                                   int packedOverlay, LinearColour tint) {
         if (bone.isHidden())
             return;
 
@@ -116,6 +113,7 @@ public abstract class BedrockEntityRenderer<T extends Entity> extends EntityRend
             if (quad == null)
                 continue;
 
+            /* TODO Fix normals */
             Vector3f normal = normalisedPose.transform(new Vector3f(quad.normal()));
 
             RenderUtils.fixZeroWidthCube(cube, normal);

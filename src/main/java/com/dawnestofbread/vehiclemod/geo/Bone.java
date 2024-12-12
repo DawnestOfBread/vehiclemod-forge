@@ -9,6 +9,10 @@ import org.joml.Vector3f;
 import java.util.ArrayList;
 import java.util.List;
 
+/*
+ * Parses the json bone data and packs it into this nice class
+ * Again, the raw JSON shouldn't be used outside of here
+*/
 public class Bone {
     private final JsonObject jsonBone;
     private final String name;
@@ -20,25 +24,24 @@ public class Bone {
     private boolean hidden = false;
     private final List<Cube> cubes = new ArrayList<>();
     public Bone(JsonElement bone) {
-        JsonObject boneObject = bone.getAsJsonObject();
-        jsonBone = boneObject;
-        this.name = boneObject.get("name").getAsString();
-        this.hasParent = boneObject.has("parent");
-        this.parentName = hasParent ? boneObject.get("parent").getAsString() : null;
+        jsonBone = bone.getAsJsonObject();
+        this.name = jsonBone.get("name").getAsString();
+        this.hasParent = jsonBone.has("parent");
+        this.parentName = hasParent ? jsonBone.get("parent").getAsString() : null;
 
-        if (boneObject.has("pivot")) {
-            JsonArray pivot = boneObject.getAsJsonArray("pivot");
-            this.pivot = new Vec3(pivot.get(0).getAsDouble() / 16, pivot.get(1).getAsDouble() / 16, pivot.get(2).getAsDouble() / 16);
+        if (jsonBone.has("pivot")) {
+            JsonArray pivot = jsonBone.getAsJsonArray("pivot");
+            this.pivot = new Vec3(-pivot.get(0).getAsDouble() / 16, pivot.get(1).getAsDouble() / 16, pivot.get(2).getAsDouble() / 16);
         }
 
         this.scale = new Vec3(1,1,1);
 
-        if (boneObject.has("rotation")) {
-            JsonArray rotation = boneObject.get("rotation").getAsJsonArray();
-            this.rotation = new Vec3(rotation.get(0).getAsDouble(), rotation.get(1).getAsDouble(), rotation.get(2).getAsDouble());
+        if (jsonBone.has("rotation")) {
+            JsonArray rotation = jsonBone.get("rotation").getAsJsonArray();
+            this.rotation = new Vec3(Math.toRadians(-rotation.get(0).getAsDouble()), Math.toRadians(-rotation.get(1).getAsDouble()), Math.toRadians(rotation.get(2).getAsDouble()));
         }
 
-        for (JsonElement cubeE : boneObject.getAsJsonArray("cubes")) {
+        if (jsonBone.has("cubes")) for (JsonElement cubeE : jsonBone.getAsJsonArray("cubes")) {
             JsonObject cube = cubeE.getAsJsonObject();
             this.cubes.add(new Cube(cube));
         }

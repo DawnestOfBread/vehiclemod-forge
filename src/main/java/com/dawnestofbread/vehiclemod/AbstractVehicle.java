@@ -67,7 +67,6 @@ public abstract class AbstractVehicle extends Entity implements GeoEntity {
     protected AABB[] collision;
     protected Vec3 forward;
     protected final double gravity = 9.81;
-    protected long lastTick;
     protected int lerpSteps;
     protected double lerpX;
     protected double lerpXRot;
@@ -83,6 +82,8 @@ public abstract class AbstractVehicle extends Entity implements GeoEntity {
     boolean inputSprint = false;
     private Vec3 translationOffset = new Vec3(0, 0, 0);
     private float zRot;
+    protected double accumulatedTime;
+    protected double timeStep = 1d/60d;
 
     public boolean isEngineOn() {
         return !SeatManager.get(0).equals(UUID.fromString("00000000-0000-0000-0000-000000000000"));

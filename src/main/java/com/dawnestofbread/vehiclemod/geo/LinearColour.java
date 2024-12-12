@@ -2,6 +2,9 @@ package com.dawnestofbread.vehiclemod.geo;
 
 import net.minecraft.util.Mth;
 
+/*
+ * A class that represents colour and performs operations on it
+*/
 public class LinearColour {
     public static final LinearColour BLACK = new LinearColour(0, 0, 0);
     public static final LinearColour WHITE = new LinearColour(1, 1, 1);

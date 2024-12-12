@@ -4,7 +4,7 @@ import com.dawnestofbread.vehiclemod.AbstractMotorcycle;
 import com.dawnestofbread.vehiclemod.client.audio.AudioManager;
 import com.dawnestofbread.vehiclemod.utils.Curve;
 import com.dawnestofbread.vehiclemod.utils.SeatData;
-import com.dawnestofbread.vehiclemod.utils.WheelData;
+import com.dawnestofbread.vehiclemod.utils.WheelProperties;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
@@ -116,8 +116,8 @@ public class Twinkie extends AbstractMotorcycle {
     protected void setupWheels() {
         Wheels = new ArrayList<>(2);
 
-        Wheels.add(0, new WheelData());
-        Wheels.add(1, new WheelData());
+        Wheels.add(0, new WheelProperties());
+        Wheels.add(1, new WheelProperties());
 
         // Divide this by 16, because it works better and results in more realistic proportions
         Wheels.get(0).radius = 0.253125;

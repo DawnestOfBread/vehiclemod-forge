@@ -14,7 +14,7 @@ public abstract class AbstractMotorcycle extends WheeledVehicle {
         super(entityType, worldIn);
     }
 
-    @Override
+/*    @Override
     public void tick() {
         double deltaTime = (double) (new Date().getTime() - lastTick) / 1000;
         super.tick();
@@ -27,5 +27,5 @@ public abstract class AbstractMotorcycle extends WheeledVehicle {
             }
             this.turn(0f, wheelieAngularVelocity * deltaTime);
         }
-    }
+    }*/
 }

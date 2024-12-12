@@ -12,6 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+/*
+ * A bedrock entity model format parser
+ * While the raw JSON model is accessible (getJsonModel), it shouldn't be used outside of this class
+*/
 public class BedrockModel {
     private final List<Bone> bones = new ArrayList<>();
     private JsonObject jsonModel;
@@ -20,7 +24,7 @@ public class BedrockModel {
         try {
             InputStream stream = Minecraft.getInstance().getResourceManager().open(resourceLocation);
             InputStreamReader reader = new InputStreamReader(stream);
-            setJsonModel(JsonParser.parseReader(reader).getAsJsonObject());
+            jsonModel = JsonParser.parseReader(reader).getAsJsonObject();
 
             for (JsonElement bone : jsonModel.get("minecraft:geometry").getAsJsonArray().get(0).getAsJsonObject().getAsJsonArray("bones")) {
                 bones.add(new Bone(bone));
@@ -34,15 +38,11 @@ public class BedrockModel {
         return jsonModel;
     }
 
-    protected void setJsonModel(JsonObject jsonModel) {
-        this.jsonModel = jsonModel;
-    }
-
     public List<Bone> getBones() {
         return bones;
     }
 
-    public List<Bone> getChildBones(String name) {
+    public List<Bone> getChildrenOfBone(String name) {
         return bones.stream().filter(bone -> bone.hasParent() && Objects.equals(bone.getParentName(), name)).toList();
     }
 

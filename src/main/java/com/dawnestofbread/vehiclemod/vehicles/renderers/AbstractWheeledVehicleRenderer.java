@@ -1,7 +1,7 @@
 package com.dawnestofbread.vehiclemod.vehicles.renderers;
 
 import com.dawnestofbread.vehiclemod.WheeledVehicle;
-import com.dawnestofbread.vehiclemod.utils.WheelData;
+import com.dawnestofbread.vehiclemod.utils.WheelProperties;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -34,7 +34,7 @@ public abstract class AbstractWheeledVehicleRenderer<T extends WheeledVehicle> e
 
         // Create a debug render buffer
         VertexConsumer vertexConsumer = bufferSource.getBuffer(RenderType.lines());
-        for (WheelData wheel : entity.Wheels) {
+        for (WheelProperties wheel : entity.Wheels) {
             Vec3 offsetStart = entity.position().add(wheel.currentRelativePosition.scale(0.5).add(new Vec3(-wheel.width / 2, -wheel.radius, -wheel.radius).yRot(-entity.getYRot() * ((float) Math.PI / 180F)).xRot(-entity.getXRot() * ((float) Math.PI / 180F))));
             Vec3 offsetEnd = entity.position().add(wheel.currentRelativePosition.scale(0.5).add(new Vec3(wheel.width / 2, wheel.radius, wheel.radius).yRot(-entity.getYRot() * ((float) Math.PI / 180F)).xRot(-entity.getXRot() * ((float) Math.PI / 180F))));
 
@@ -49,8 +49,8 @@ public abstract class AbstractWheeledVehicleRenderer<T extends WheeledVehicle> e
             renderBox(poseStack, vertexConsumer, new AABB(wheel.targetWorldPosition.x - .25, wheel.targetWorldPosition.y - .25, wheel.targetWorldPosition.z - .25, wheel.targetWorldPosition.x + .25, wheel.targetWorldPosition.y + .25, wheel.targetWorldPosition.z + .25), 1, 0, 1);
         }
         int wheelCount = entity.Wheels.size();
-        List<WheelData> frontWheels = entity.Wheels.subList(0, wheelCount / 2); // Front wheels (first half)
-        List<WheelData> rearWheels = entity.Wheels.subList(wheelCount / 2, wheelCount); // Rear wheels (second half)
+        List<WheelProperties> frontWheels = entity.Wheels.subList(0, wheelCount / 2); // Front wheels (first half)
+        List<WheelProperties> rearWheels = entity.Wheels.subList(wheelCount / 2, wheelCount); // Rear wheels (second half)
 
         Vec3 frontMidpoint = entity.calculateAxleMidpoint(frontWheels);
         Vec3 rearMidpoint = entity.calculateAxleMidpoint(rearWheels);

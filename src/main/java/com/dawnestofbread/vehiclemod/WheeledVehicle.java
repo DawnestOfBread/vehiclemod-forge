@@ -6,7 +6,7 @@ import com.dawnestofbread.vehiclemod.client.effects.SurfaceHelper;
 import com.dawnestofbread.vehiclemod.utils.Curve;
 import com.dawnestofbread.vehiclemod.utils.HitResult;
 import com.dawnestofbread.vehiclemod.utils.VectorUtils;
-import com.dawnestofbread.vehiclemod.utils.WheelData;
+import com.dawnestofbread.vehiclemod.utils.WheelProperties;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
@@ -28,7 +28,6 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.slf4j.Logger;
 
-import java.util.Date;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -46,14 +45,15 @@ public abstract class WheeledVehicle extends AbstractVehicle {
     private static final EntityDataAccessor<Float> WEIGHT_TRANSFER_Z = SynchedEntityData.defineId(WheeledVehicle.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Float> RPM_DATA = SynchedEntityData.defineId(WheeledVehicle.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<Boolean> BRAKING = SynchedEntityData.defineId(WheeledVehicle.class, EntityDataSerializers.BOOLEAN);
-    public List<WheelData> Wheels;
+    protected final double dragConstant = 0.4257;
+    protected final Vec3 gravitationalAcceleration = new Vec3(0, -0.0009, 0);
+    public List<WheelProperties> Wheels;
     public double wheelBase;
     public Vec3 centreOfGeometry, frontAxle, rearAxle;
     public double steeringAngle;
-    public double maxBodyPitch; // How much the body rotates when shifting weight
-    public double maxBodyRoll; // How much the body rotates when shifting weight
-    public double weightTransferX, weightTransferZ; // 1 = full weight on front | -1 = full weight on rear
     public double climbAmount = .5;
+    protected double maxBodyPitch; // How much the body rotates when shifting weight
+    protected double maxBodyRoll; // How much the body rotates when shifting weight
     protected Vec3 acceleration;
     protected double angularAccelerationPitch;
     protected double angularVelocity;
@@ -64,7 +64,6 @@ public abstract class WheeledVehicle extends AbstractVehicle {
     protected double centrifugalForceMultiplier;
     protected int currentGear;
     protected double differentialRatio;
-    protected final double dragConstant = 0.4257;
     protected double brakingConstant;
     protected double corneringStiffness;
     protected double driveWheelAngularVelocity;
@@ -76,7 +75,6 @@ public abstract class WheeledVehicle extends AbstractVehicle {
     protected double forwardSpeed;
     protected Vec3 forwardVelocity = new Vec3(0, 0, 0);
     protected double[] gearRatios;
-    protected final Vec3 gravitationalAcceleration = new Vec3(0, -0.0009, 0);
     protected double idleRPM, shiftUpRPM, shiftDownRPM, maxRPM, engineForce;
     protected double inertiaPitch;
     protected double lateralForceFront, lateralForceRear;
@@ -90,11 +88,28 @@ public abstract class WheeledVehicle extends AbstractVehicle {
     protected double traction;
     protected double transmissionEfficiency; // .7 - .9
     protected double weight, idleBrakeAmount = .1;
+    private double weightTransferX, weightTransferZ; // 1 = full weight on front | -1 = full weight on rear
     private double shiftTimeLeft;
 
     protected WheeledVehicle(EntityType<? extends Entity> entityType, Level worldIn) {
         super(entityType, worldIn);
         this.setupWheels();
+    }
+
+    public double getMaxBodyPitch() {
+        return maxBodyPitch;
+    }
+
+    public double getMaxBodyRoll() {
+        return maxBodyRoll;
+    }
+
+    public double getWeightTransferX() {
+        return weightTransferX;
+    }
+
+    public double getWeightTransferZ() {
+        return weightTransferZ;
     }
 
     protected abstract void setupWheels();
@@ -134,27 +149,29 @@ public abstract class WheeledVehicle extends AbstractVehicle {
 
     @SubscribeEvent
     public void tick() {
-        double deltaTime = (double) (new Date().getTime() - lastTick) / 1000;
-        lastTick = new Date().getTime();
+        accumulatedTime += 0.05d;
+        double deltaTime = timeStep;
         super.tick(deltaTime);
-
-        steering = fInterpTo(steering, steeringInput, 4.5f, (float) deltaTime);
-        if (!this.level().isClientSide) {
-            simulateVehicleServer(deltaTime);
-            simulateGravity(deltaTime);
-            this.move(MoverType.SELF, forwardVelocity.yRot(-this.getYRot() * (Mth.PI / 180)).add(centrifugalForce.scale(centrifugalForceMultiplier * 2).yRot(-this.getYRot() * (Mth.PI / 180))).scale(deltaTime).add(this.onGround() ? Vec3.ZERO : gravitationalAcceleration.scale(mass)));
-            double yawVelocity = (float) ((angularVelocity * deltaTime) * movementDirection);
-            if (!Double.isNaN(yawVelocity)) this.turn(-yawVelocity, 0);
-        } else {
-            simulateVehicleClient(deltaTime);
+        while (accumulatedTime >= timeStep) {
+            steering = fInterpTo(steering, steeringInput, 4.5f, (float) deltaTime);
+            if (!this.level().isClientSide) {
+                simulateVehicleServer(deltaTime);
+                simulateGravity(deltaTime);
+                this.move(MoverType.SELF, forwardVelocity.yRot(-this.getYRot() * (Mth.PI / 180)).add(centrifugalForce.scale(centrifugalForceMultiplier * 2).yRot(-this.getYRot() * (Mth.PI / 180))).scale(deltaTime).add(this.onGround() ? Vec3.ZERO : gravitationalAcceleration.scale(mass)));
+                double yawVelocity = (float) ((angularVelocity * deltaTime) * movementDirection);
+                if (!Double.isNaN(yawVelocity)) this.turn(-yawVelocity, 0);
+            } else {
+                simulateVehicleClient(deltaTime);
+            }
+            accumulatedTime -= timeStep;
         }
     }
 
     protected void simulateVehicleServer(double deltaTime) {
-        WheelData driveWheel = Wheels.get(driveWheelReferenceIndex);
+        WheelProperties driveWheel = Wheels.get(driveWheelReferenceIndex);
         engineForce = throttle * engineForceMultiplier;
 
-        forward = new Vec3(0,0,1);
+        forward = new Vec3(0, 0, 1);
         forwardSpeed = forwardVelocity.length();
         this.writeFloatTag(VELOCITY, (float) (forwardSpeed * movementDirection));
 
@@ -173,8 +190,8 @@ public abstract class WheeledVehicle extends AbstractVehicle {
                 acceleration = Vec3.ZERO;
                 forwardVelocity = Vec3.ZERO;
             }
-        }
-        else acceleration = VectorUtils.divideVectorByScalar(new Vec3(0, 0, 1).scale(driveTorque / driveWheel.radius).add(dragForce), mass);
+        } else
+            acceleration = VectorUtils.divideVectorByScalar(new Vec3(0, 0, 1).scale(driveTorque / driveWheel.radius).add(dragForce), mass);
 
         forwardVelocity = forwardVelocity.add(acceleration.scale(deltaTime));
         forwardSpeed = forwardVelocity.length();
@@ -214,9 +231,9 @@ public abstract class WheeledVehicle extends AbstractVehicle {
         centrifugalForceMultiplier *= 1.2 - traction;
 
         // Should be in a -1 — +1 range
-        weightTransferX = (height / wheelBase) * ((acceleration.length() * (forward.dot(acceleration.yRot((float) Math.toRadians(-this.getYRot())).normalize()))) / gravity) * 2;
+        weightTransferX = (height / wheelBase) * ((acceleration.length() * (forward.dot(acceleration.normalize()))) / gravity) * 2;
         // This equation is baloney, but the result sure does look nice
-        weightTransferZ = (height / wheelBase) * ((centrifugalForce.length() * centrifugalForceMultiplier * (forward.yRot((float) Math.toRadians(90)).dot(centrifugalForce.yRot(-this.getYRot() * (Mth.PI / 180)).normalize()))) / gravity) * 4;
+        weightTransferZ = (height / wheelBase) * ((centrifugalForce.length() * centrifugalForceMultiplier * (forward.yRot((float) Math.toRadians(90)).dot(centrifugalForce.normalize()))) / gravity) * 4;
 
         this.writeFloatTag(WEIGHT_TRANSFER_X, (float) weightTransferX);
         this.writeFloatTag(WEIGHT_TRANSFER_Z, (float) weightTransferZ);
@@ -264,7 +281,7 @@ public abstract class WheeledVehicle extends AbstractVehicle {
     protected void updateWheelServer(int wheelIndex, double deltaTime) {
         if (!(Wheels.size() > 0)) return;
         if (Wheels.get(wheelIndex) == null) return;
-        WheelData wheel = Wheels.get(wheelIndex);
+        WheelProperties wheel = Wheels.get(wheelIndex);
 
         HitResult wheelTrace = checkWheelOnGroundRaycast(wheel);
         wheel.onGround = wheelTrace.hit;
@@ -272,7 +289,7 @@ public abstract class WheeledVehicle extends AbstractVehicle {
         wheel.currentRelativePosition = rotateVectorToEntitySpace(wheel.startingRelativePosition.scale(.5).add(0, -wheel.springLength, 0), this);
     }
 
-    private HitResult checkWheelOnGroundRaycast(WheelData wheel) {
+    private HitResult checkWheelOnGroundRaycast(WheelProperties wheel) {
         Vec3 offsetStart = this.position().add(wheel.currentRelativePosition.scale(0.5).add(new Vec3(-wheel.width / 2, -wheel.radius, -wheel.radius).yRot(-this.getYRot() * ((float) Math.PI / 180F)).xRot(-this.getXRot() * ((float) Math.PI / 180F))));
         Vec3 offsetEnd = this.position().add(wheel.currentRelativePosition.scale(0.5).add(new Vec3(wheel.width / 2, wheel.radius, wheel.radius).yRot(-this.getYRot() * ((float) Math.PI / 180F)).xRot(-this.getXRot() * ((float) Math.PI / 180F))));
 
@@ -289,17 +306,18 @@ public abstract class WheeledVehicle extends AbstractVehicle {
     }
 
     protected void simulateVehicleClient(double deltaTime) {
+        wheelBase = frontAxle.distanceTo(rearAxle);
         forward = new Vec3(0, 0, 1).yRot(-this.getYRot() * (Mth.PI / 180));
         angularVelocity = Math.abs(this.getYRot() - this.yRotO);
         forwardSpeed = this.readFloatTag(VELOCITY);
         movementDirection = (forwardSpeed > 0 ? 1f : forwardSpeed < 0 ? -1f : 0f);
+
         weightTransferX = this.readFloatTag(WEIGHT_TRANSFER_X);
         weightTransferZ = this.readFloatTag(WEIGHT_TRANSFER_Z);
         RPM = dInterpTo(RPM, this.readFloatTag(RPM_DATA), 3500f, deltaTime);
         braking = this.readBoolTag(BRAKING);
         updateWheelsClient(deltaTime);
         updateVehicleRotation(deltaTime);
-        wheelBase = frontAxle.distanceTo(rearAxle);
 
         Map<AudioManager.SoundType, SimpleEngineSound> soundMap = SOUND_MANAGER.computeIfAbsent(this, v -> new EnumMap<>(AudioManager.SoundType.class));
         SimpleEngineSound idleSound = soundMap.get(AudioManager.SoundType.ENGINE_IDLE);
@@ -336,7 +354,7 @@ public abstract class WheeledVehicle extends AbstractVehicle {
     protected void updateWheelClient(int wheelIndex, double deltaTime) {
         if (!(Wheels.size() > 0)) return;
         if (Wheels.get(wheelIndex) == null) return;
-        WheelData wheel = Wheels.get(wheelIndex);
+        WheelProperties wheel = Wheels.get(wheelIndex);
 
         HitResult wheelTrace = checkWheelOnGroundRaycast(wheel);
         wheel.onGround = wheelTrace.hit;
@@ -368,7 +386,7 @@ public abstract class WheeledVehicle extends AbstractVehicle {
             SurfaceHelper.spawnSkidEffect(SurfaceHelper.getSurfaceFromPosition(this.getBlockPosBelowThatAffectsMyMovement()), this.position().add(wheel.currentRelativePosition.x / 2, wheel.currentRelativePosition.y / 2, wheel.currentRelativePosition.z / 2), forward.scale(-movementDirection / 16).add(0, .01, 0));
     }
 
-    private HitResult checkWheelShouldClimbRaycast(WheelData wheel) {
+    private HitResult checkWheelShouldClimbRaycast(WheelProperties wheel) {
         Vec3 lineTraceStart = this.position().add(rotateVectorToEntitySpaceYOnly(wheel.startingRelativePosition.scale(.5).add(0, climbAmount * 1.01, 0), this));
         Vec3 lineTraceEnd = lineTraceStart.add(0, -wheelBase - wheel.radius, 0).add(rotateVectorToEntitySpaceYOnly(new Vec3(0, 0, wheel.radius * 1.5 * movementDirection), this));
 
@@ -377,8 +395,8 @@ public abstract class WheeledVehicle extends AbstractVehicle {
 
     private void updateVehicleRotation(double deltaTime) {
         int wheelCount = Wheels.size();
-        List<WheelData> frontWheels = Wheels.subList(0, wheelCount / 2); // Front wheels (first half)
-        List<WheelData> rearWheels = Wheels.subList(wheelCount / 2, wheelCount); // Rear wheels (second half)
+        List<WheelProperties> frontWheels = Wheels.subList(0, wheelCount / 2); // Front wheels (first half)
+        List<WheelProperties> rearWheels = Wheels.subList(wheelCount / 2, wheelCount); // Rear wheels (second half)
 
         Vec3 frontMidpoint = calculateAxleMidpoint(frontWheels);
         Vec3 rearMidpoint = calculateAxleMidpoint(rearWheels);
@@ -409,17 +427,17 @@ public abstract class WheeledVehicle extends AbstractVehicle {
         //setPos(this.getX(), this.getY() + yDifference,this.getZ());
     }
 
-    public Vec3 calculateAxleMidpoint(List<WheelData> wheels) {
+    public Vec3 calculateAxleMidpoint(List<WheelProperties> wheels) {
         Vec3 midpoint = Vec3.ZERO;
-        for (WheelData wheel : wheels) {
+        for (WheelProperties wheel : wheels) {
             midpoint = midpoint.add(wheel.targetWorldPosition);
         }
         return midpoint.scale(1.0 / wheels.size());
     }
 
-    private Vec3 getLeftMostWheelPosition(List<WheelData> wheels) {
-        WheelData leftmostWheel = wheels.get(0);
-        for (WheelData wheel : wheels) {
+    private Vec3 getLeftMostWheelPosition(List<WheelProperties> wheels) {
+        WheelProperties leftmostWheel = wheels.get(0);
+        for (WheelProperties wheel : wheels) {
             if (wheel.startingRelativePosition.x() < leftmostWheel.startingRelativePosition.x()) {
                 leftmostWheel = wheel;
             }
@@ -427,9 +445,9 @@ public abstract class WheeledVehicle extends AbstractVehicle {
         return leftmostWheel.targetWorldPosition;
     }
 
-    private Vec3 getRightMostWheelPosition(List<WheelData> wheels) {
-        WheelData rightmostWheel = wheels.get(0);
-        for (WheelData wheel : wheels) {
+    private Vec3 getRightMostWheelPosition(List<WheelProperties> wheels) {
+        WheelProperties rightmostWheel = wheels.get(0);
+        for (WheelProperties wheel : wheels) {
             if (wheel.startingRelativePosition.x() > rightmostWheel.startingRelativePosition.x()) {
                 rightmostWheel = wheel;
             }
