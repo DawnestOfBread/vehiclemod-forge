@@ -163,9 +163,9 @@ public abstract class BedrockEntityRenderer<T extends Entity> extends EntityRend
                         float x, float y, float z,
                         float u, float v, int packedLight, Vector3f normal) {
         vertexConsumer.vertex(pose.pose(), x, y, z)
-                .color(255, 255, 255, 255)  // White color for now
+                .color(255, 255, 255, 255)                                  // White colour for now
                 .uv(u, v)                                                   // UV coordinates
-                .overlayCoords(0)                                   // No overlay
+                .overlayCoords(0)                                           // No overlay
                 .uv2(packedLight)                                           // Lightmap coordinates
                 .normal(pose.normal(), normal.x, normal.y, normal.z)        // Normal vector
                 .endVertex();
@@ -177,6 +177,7 @@ public abstract class BedrockEntityRenderer<T extends Entity> extends EntityRend
             InputStreamReader reader = new InputStreamReader(stream);
             return JsonParser.parseReader(reader).getAsJsonObject();
         } catch (Exception e) {
+            e.q
             e.printStackTrace();
             return null;
         }
