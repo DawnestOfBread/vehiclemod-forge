@@ -15,8 +15,8 @@ import software.bernie.geckolib.model.GeoModel;
 import javax.annotation.Nullable;
 import java.util.List;
 
-import static com.dawnestofbread.vehiclemod.utils.VectorUtils.rotateVectorToEntitySpace;
-import static com.dawnestofbread.vehiclemod.utils.VectorUtils.rotateVectorToEntitySpaceYOnly;
+import static com.dawnestofbread.vehiclemod.utils.Rendering.*;
+import static com.dawnestofbread.vehiclemod.utils.VectorUtils.*;
 
 public abstract class AbstractWheeledVehicleRenderer<T extends WheeledVehicle> extends AbstractVehicleRenderer<T> {
     public AbstractWheeledVehicleRenderer(EntityRendererProvider.Context renderManager, GeoModel<T> model) {

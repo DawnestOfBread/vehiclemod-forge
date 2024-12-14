@@ -8,6 +8,6 @@ import net.minecraft.client.renderer.entity.EntityRenderers;
 public class EntityRendererRegistry {
     public static void RegisterAllRenderers() {
         EntityRenderers.register(VehicleRegistry.ANNIHILATOR.get(), AnnihilatorRenderer::new);
-        EntityRenderers.register(VehicleRegistry.TWINKIE.get(), TwinkieBedrockRenderer::new);
+        EntityRenderers.register(VehicleRegistry.TWINKIE.get(), TwinkieRenderer::new);
     }
 }

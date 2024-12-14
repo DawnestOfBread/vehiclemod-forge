@@ -6,7 +6,7 @@
 				"identifier": "geometry.unknown",
 				"texture_width": 16,
 				"texture_height": 16,
-				"visible_bounds_width": 2,
+				"visible_bounds_width": 4,
 				"visible_bounds_height": 4.5,
 				"visible_bounds_offset": [0, 1.75, 0]
 			},
@@ -44,11 +44,14 @@
 				{
 					"name": "bonedblock",
 					"parent": "root",
-					"pivot": [0, 16, -16],
+					"pivot": [0, 21.5, -22],
+					"rotation": [45, 0, 0],
 					"cubes": [
 						{
-							"origin": [-8, 16, -24],
+							"origin": [-8, 13.5, -30],
 							"size": [16, 16, 16],
+							"pivot": [0, 13, -22],
+							"rotation": [-45, 0, 0],
 							"uv": {
 								"north": {"uv": [-12, 2], "uv_size": [16, 16]},
 								"east": {"uv": [-28, 2], "uv_size": [16, 16]},
