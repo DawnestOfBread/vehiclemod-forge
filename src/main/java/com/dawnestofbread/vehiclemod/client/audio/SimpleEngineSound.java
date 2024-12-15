@@ -10,7 +10,6 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 import java.lang.ref.WeakReference;
-import java.util.UUID;
 
 @OnlyIn(Dist.CLIENT)
 public class SimpleEngineSound extends AbstractTickableSoundInstance {

@@ -21,9 +21,9 @@ import org.joml.Vector4f;
 public abstract class BedrockEntityRenderer<T extends Entity> extends EntityRenderer<T> {
 
     private final BedrockModel model;
+    protected final RenderType renderType = RenderType.solid();
     private VertexConsumer buffer;
     private Entity entity;
-    protected RenderType renderType = RenderType.solid();
 
     public BedrockEntityRenderer(EntityRendererProvider.Context context, ResourceLocation modelLocation) {
         super(context);
@@ -141,7 +141,7 @@ public abstract class BedrockEntityRenderer<T extends Entity> extends EntityRend
     }
 
     @Override
-    public ResourceLocation getTextureLocation(Entity entity) {
+    public @NotNull ResourceLocation getTextureLocation(@NotNull Entity entity) {
         return new ResourceLocation("vehiclemod", "textures/test.png");
     }
 }

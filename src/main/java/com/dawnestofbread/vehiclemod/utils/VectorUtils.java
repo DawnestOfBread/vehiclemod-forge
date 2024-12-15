@@ -1,6 +1,5 @@
 package com.dawnestofbread.vehiclemod.utils;
 
-import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 

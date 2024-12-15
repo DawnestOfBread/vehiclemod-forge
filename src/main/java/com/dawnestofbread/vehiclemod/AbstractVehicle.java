@@ -5,7 +5,6 @@ import com.dawnestofbread.vehiclemod.client.audio.SimpleEngineSound;
 import com.dawnestofbread.vehiclemod.network.*;
 import com.dawnestofbread.vehiclemod.utils.MathUtils;
 import com.dawnestofbread.vehiclemod.utils.SeatData;
-import com.eliotlash.mclib.math.functions.classic.Abs;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -31,7 +30,6 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import software.bernie.geckolib.animatable.GeoEntity;
-import software.bernie.geckolib.core.animatable.GeoAnimatable;
 import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.core.animation.AnimatableManager;
 import software.bernie.geckolib.core.animation.AnimationController;
@@ -83,7 +81,7 @@ public abstract class AbstractVehicle extends Entity implements GeoEntity {
     private Vec3 translationOffset = new Vec3(0, 0, 0);
     private float zRot;
     protected double accumulatedTime;
-    protected double timeStep = 1d/60d;
+    protected final double timeStep = 1d/60d;
 
     public boolean isEngineOn() {
         return !SeatManager.get(0).equals(UUID.fromString("00000000-0000-0000-0000-000000000000"));
@@ -142,7 +140,7 @@ public abstract class AbstractVehicle extends Entity implements GeoEntity {
     }
 
     @Override
-    protected final void playStepSound(BlockPos blockPos, BlockState blockState) {
+    protected final void playStepSound(@NotNull BlockPos blockPos, @NotNull BlockState blockState) {
     }
 
     // Come on you can't just push a vehicle, you're not *that* strong
@@ -179,7 +177,7 @@ public abstract class AbstractVehicle extends Entity implements GeoEntity {
     }
 
     @Override
-    public InteractionResult interact(Player player, InteractionHand hand) {
+    public @NotNull InteractionResult interact(Player player, @NotNull InteractionHand hand) {
         if (!player.level().isClientSide && !player.isCrouching()) {
             // Unused for now
             ItemStack heldItem = player.getItemInHand(hand);
@@ -217,7 +215,7 @@ public abstract class AbstractVehicle extends Entity implements GeoEntity {
     }
 
     @Override
-    protected void positionRider(Entity rider_, MoveFunction moveFunc) {
+    protected void positionRider(@NotNull Entity rider_, @NotNull MoveFunction moveFunc) {
         super.positionRider(rider_, moveFunc);
         updatePassengerPosition(rider_);
     }
@@ -228,7 +226,7 @@ public abstract class AbstractVehicle extends Entity implements GeoEntity {
     }
 
     @Override
-    public void addPassenger(Entity passenger) {
+    public void addPassenger(@NotNull Entity passenger) {
         super.addPassenger(passenger);
         if (this.isControlledByLocalInstance() && this.lerpSteps > 0) {
             this.lerpSteps = 0;
@@ -239,7 +237,7 @@ public abstract class AbstractVehicle extends Entity implements GeoEntity {
     }
 
     @Override
-    protected void removePassenger(Entity entity) {
+    protected void removePassenger(@NotNull Entity entity) {
         super.removePassenger(entity);
         if (!entity.level().isClientSide && SeatManager.contains(entity.getUUID())) {
             if (SeatManager.indexOf(entity.getUUID()) == 0) throttle = 0;
@@ -250,7 +248,7 @@ public abstract class AbstractVehicle extends Entity implements GeoEntity {
     }
 
     @Override
-    protected boolean canAddPassenger(Entity passenger) {
+    protected boolean canAddPassenger(@NotNull Entity passenger) {
         return this.getPassengers().size() < Seats.length;
     }
 
@@ -265,7 +263,7 @@ public abstract class AbstractVehicle extends Entity implements GeoEntity {
     }
 
     @Override
-    public void onSyncedDataUpdated(EntityDataAccessor<?> dataAccessor) {
+    public void onSyncedDataUpdated(@NotNull EntityDataAccessor<?> dataAccessor) {
         super.onSyncedDataUpdated(dataAccessor);
         if (dataAccessor.equals(SEAT_MANAGER)) readSeatManager(this.entityData.get(SEAT_MANAGER));
     }
@@ -298,7 +296,7 @@ public abstract class AbstractVehicle extends Entity implements GeoEntity {
         this.lerpTick();
 
         if (this.level().isClientSide) {
-            if (this.SeatManager.get(0).equals(Minecraft.getInstance().player.getUUID())) {
+            if (this.SeatManager.get(0).equals(Objects.requireNonNull(Minecraft.getInstance().player).getUUID())) {
                 inputForward = Minecraft.getInstance().options.keyUp.isDown();
                 inputBackward = Minecraft.getInstance().options.keyDown.isDown();
                 inputRight = Minecraft.getInstance().options.keyRight.isDown();
@@ -366,7 +364,7 @@ public abstract class AbstractVehicle extends Entity implements GeoEntity {
     protected void UpdateCamera(double deltaTime) {
         Entity camera = Minecraft.getInstance().cameraEntity;
 
-        float xPos = MathUtils.fInterpToExp((float) camera.getX(), (float) this.getX(), 3f, (float) deltaTime);
+        float xPos = MathUtils.fInterpToExp((float) Objects.requireNonNull(camera).getX(), (float) this.getX(), 3f, (float) deltaTime);
         float yPos = MathUtils.fInterpToExp((float) camera.getY(), (float) this.getY(), 3f, (float) deltaTime);
         float zPos = MathUtils.fInterpToExp((float) camera.getZ(), (float) this.getZ(), 3f, (float) deltaTime);
 

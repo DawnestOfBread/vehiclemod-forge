@@ -19,7 +19,7 @@ public class Bone {
     private final String parentName;
     private final boolean hasParent;
     private Vec3 pivot = Vec3.ZERO;
-    private Vec3 scale = Vec3.ZERO;
+    private final Vec3 scale;
     private Vec3 rotation = Vec3.ZERO;
     private boolean hidden = false;
     private final List<Cube> cubes = new ArrayList<>();

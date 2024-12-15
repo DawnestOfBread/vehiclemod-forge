@@ -7,15 +7,14 @@ import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.ConcretePowderBlock;
-import net.minecraft.world.level.block.DoubleBlockCombiner;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.Objects;
+
 public class SurfaceHelper {
     public static BlockState getSurfaceFromPosition(BlockPos position) {
-        return Minecraft.getInstance().level.getBlockState(position);
+        return Objects.requireNonNull(Minecraft.getInstance().level).getBlockState(position);
     }
     public static ParticleOptions getFrictionEffectBasedOnSurface(BlockState s) {
         Block surface = s.getBlock();
@@ -33,9 +32,9 @@ public class SurfaceHelper {
                 (new BlockParticleOption(ParticleTypes.BLOCK, s));
     }
     public static void spawnFrictionEffect(BlockState surface, Vec3 p, Vec3 vel) {
-        if (getFrictionEffectBasedOnSurface(surface) != null) Minecraft.getInstance().level.addParticle(getFrictionEffectBasedOnSurface(surface), p.x, p.y, p.z, vel.x, vel.y, vel.z);
+        if (getFrictionEffectBasedOnSurface(surface) != null) Objects.requireNonNull(Minecraft.getInstance().level).addParticle(Objects.requireNonNull(getFrictionEffectBasedOnSurface(surface)), p.x, p.y, p.z, vel.x, vel.y, vel.z);
     }
     public static void spawnSkidEffect(BlockState surface, Vec3 p, Vec3 vel) {
-        if (getSkidEffectBasedOnSurface(surface) != null) Minecraft.getInstance().level.addParticle(getSkidEffectBasedOnSurface(surface), p.x, p.y, p.z, vel.x, vel.y, vel.z);
+        if (getSkidEffectBasedOnSurface(surface) != null) Objects.requireNonNull(Minecraft.getInstance().level).addParticle(getSkidEffectBasedOnSurface(surface), p.x, p.y, p.z, vel.x, vel.y, vel.z);
     }
 }

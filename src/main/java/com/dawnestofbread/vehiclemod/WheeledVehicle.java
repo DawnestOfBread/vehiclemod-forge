@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static com.dawnestofbread.vehiclemod.client.audio.AudioManager.calculateVolume;
 import static com.dawnestofbread.vehiclemod.utils.LineTrace.lineTraceByType;
@@ -51,7 +52,7 @@ public abstract class WheeledVehicle extends AbstractVehicle {
     public double wheelBase;
     public Vec3 centreOfGeometry, frontAxle, rearAxle;
     public double steeringAngle;
-    public double climbAmount = .5;
+    public final double climbAmount = .5;
     protected double maxBodyPitch; // How much the body rotates when shifting weight
     protected double maxBodyRoll; // How much the body rotates when shifting weight
     protected Vec3 acceleration;
@@ -337,7 +338,7 @@ public abstract class WheeledVehicle extends AbstractVehicle {
                     double result = Math.random();
 
                     if (result < probability)
-                        Minecraft.getInstance().level.addParticle(ParticleTypes.SMOKE, p.x, p.y, p.z, vel.x, vel.y, vel.z);
+                        Objects.requireNonNull(Minecraft.getInstance().level).addParticle(ParticleTypes.SMOKE, p.x, p.y, p.z, vel.x, vel.y, vel.z);
                 }
             }
         }
