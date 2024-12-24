@@ -1,10 +1,9 @@
 package com.dawnestofbread.vehiclemod.client.handlers;
 
 import com.dawnestofbread.vehiclemod.AbstractVehicle;
-import com.dawnestofbread.vehiclemod.utils.SeatData;
+import com.dawnestofbread.vehiclemod.utils.Seat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
-import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.client.event.RenderPlayerEvent;
@@ -15,8 +14,8 @@ public class PlayerTransformHandler {
     public void onPreRender(RenderPlayerEvent.Pre event)
     {
         Player player = event.getEntity();
-        Entity rider = player.getVehicle();
-        if(rider instanceof AbstractVehicle vehicle)
+        Entity ridden = player.getVehicle();
+        if(ridden instanceof AbstractVehicle vehicle)
         {
             this.applyPassengerTransformations(vehicle, player, event.getPoseStack(), event.getPartialTick());
         }
@@ -27,13 +26,12 @@ public class PlayerTransformHandler {
         int seatIndex = vehicle.SeatManager.indexOf(player.getUUID());
         if(seatIndex == -1) return;
 
-        SeatData seat = vehicle.Seats[seatIndex];
-        poseStack.mulPose(Axis.of(vehicle.getForward().toVector3f()).rotationDegrees(-vehicle.passengerZRot));
-        poseStack.mulPose(Axis.of(vehicle.getForward().yRot(Mth.HALF_PI).toVector3f()).rotationDegrees(-vehicle.passengerXRot));
-
-        /* This would be a good time to complain about Minecraft's vectors and transformations
-        *  Why is Y up? Huh? It should be Z. And why is Z forward?! It should be X!
-        *  This really throws me off as I'm used to X being roll, Y being pitch, and Z being yaw
-        *  And why is Entity.setRot in YX order? Guess I'll never know! */
+        Seat seat = vehicle.Seats[seatIndex];
+        poseStack.mulPose(Axis.YP.rotationDegrees(-vehicle.getYRot()));
+        poseStack.translate(0, seat.seatOffset.y(), 0);
+        poseStack.mulPose(Axis.XP.rotationDegrees((float) vehicle.getPassengerRotationOffset().x));
+        poseStack.mulPose(Axis.ZP.rotationDegrees((float) vehicle.getPassengerRotationOffset().z));
+        poseStack.translate(0, -seat.seatOffset.y(), 0);
+        poseStack.mulPose(Axis.YP.rotationDegrees(vehicle.getYRot()));
     }
 }

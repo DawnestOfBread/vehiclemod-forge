@@ -12,18 +12,21 @@ import java.util.List;
 /*
  * Parses the json bone data and packs it into this nice class
  * Again, the raw JSON shouldn't be used outside of here
-*/
+ */
 public class Bone {
     private final JsonObject jsonBone;
     private final String name;
     private final String parentName;
     private final boolean hasParent;
-    private Vec3 pivot = Vec3.ZERO;
     private final Vec3 scale;
+    private final List<Cube> cubes = new ArrayList<>();
+    private final BedrockModel model;
+    private Vec3 pivot = Vec3.ZERO;
     private Vec3 rotation = Vec3.ZERO;
     private boolean hidden = false;
-    private final List<Cube> cubes = new ArrayList<>();
-    public Bone(JsonElement bone) {
+
+    public Bone(JsonElement bone, BedrockModel model) {
+        this.model = model;
         jsonBone = bone.getAsJsonObject();
         this.name = jsonBone.get("name").getAsString();
         this.hasParent = jsonBone.has("parent");
@@ -34,7 +37,7 @@ public class Bone {
             this.pivot = new Vec3(-pivot.get(0).getAsDouble() / 16, pivot.get(1).getAsDouble() / 16, pivot.get(2).getAsDouble() / 16);
         }
 
-        this.scale = new Vec3(1,1,1);
+        this.scale = new Vec3(1, 1, 1);
 
         if (jsonBone.has("rotation")) {
             JsonArray rotation = jsonBone.get("rotation").getAsJsonArray();
@@ -43,8 +46,12 @@ public class Bone {
 
         if (jsonBone.has("cubes")) for (JsonElement cubeE : jsonBone.getAsJsonArray("cubes")) {
             JsonObject cube = cubeE.getAsJsonObject();
-            this.cubes.add(new Cube(cube));
+            this.cubes.add(new Cube(cube, getModel(), this));
         }
+    }
+
+    public BedrockModel getModel() {
+        return model;
     }
 
     public boolean isHidden() {
@@ -97,5 +104,10 @@ public class Bone {
 
     public List<Cube> getCubes() {
         return cubes;
+    }
+
+    @Override
+    public String toString() {
+        return name;
     }
 }

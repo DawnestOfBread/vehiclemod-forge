@@ -3,8 +3,8 @@ package com.dawnestofbread.vehiclemod.vehicles.entities;
 import com.dawnestofbread.vehiclemod.AbstractMotorcycle;
 import com.dawnestofbread.vehiclemod.client.audio.AudioManager;
 import com.dawnestofbread.vehiclemod.utils.Curve;
-import com.dawnestofbread.vehiclemod.utils.SeatData;
-import com.dawnestofbread.vehiclemod.utils.WheelProperties;
+import com.dawnestofbread.vehiclemod.utils.Seat;
+import com.dawnestofbread.vehiclemod.utils.Wheel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
@@ -64,6 +64,17 @@ public class Twinkie extends AbstractMotorcycle {
         this.transmissionEfficiency = .72;
         this.torqueCurve = new Curve(tempTCurve);
 
+        // Slip angle curve
+        List<Double> tempSACurve = new LinkedList<>();
+        tempSACurve.add(0, 5000d);
+        tempSACurve.add(1, -5500d);
+        tempSACurve.add(2, -5800d);
+        tempSACurve.add(3, 0d);
+        tempSACurve.add(4, 5800d);
+        tempSACurve.add(5, 5500d);
+        tempSACurve.add(6, 5000d);
+        this.slipAngleCurve = new Curve(tempSACurve);
+
         // Gear setup
         this.differentialRatio = 2.86;
         this.gearRatios = new double[5];
@@ -80,10 +91,7 @@ public class Twinkie extends AbstractMotorcycle {
         this.timeToShift = .25;
 
         // How much the wheels turn; NOT using Ackermann steering geometry
-        this.steeringAngle = 27;
-
-        // Traction/grip while turning (0-1 range; 1 meaning great, 0 meaning awful)
-        this.traction = 0.6;
+        this.steeringAngle = 25;
 
         // 0-1
         this.exhaustFumeAmount = .1f;
@@ -91,7 +99,7 @@ public class Twinkie extends AbstractMotorcycle {
         this.exhaust[0] = new Vec3(0.4375, 0.3715625, -1.1594375);
         this.exhaust[1] = new Vec3(-0.4375, 0.3715625, -1.1594375);
 
-        this.engineSounds = new HashMap<>();
+        this.engineSounds = new HashMap<>(2);
         this.engineSounds.put(AudioManager.SoundType.ENGINE_IDLE, SCOOTER_IDLE.get());
         this.engineSounds.put(AudioManager.SoundType.ENGINE_MOVING, SCOOTER_MOVING.get());
     }
@@ -99,15 +107,15 @@ public class Twinkie extends AbstractMotorcycle {
     // Create the seats and set their offsets
     @Override
     protected void setupSeats() {
-        Seats = new SeatData[2];
+        Seats = new Seat[2];
 
         // This is divided by 16
-        SeatData seat0 = new SeatData();
-        seat0.seatOffset = new Vec3(0,0.125,-0.2933625);
+        Seat seat0 = new Seat();
+        seat0.seatOffset = new Vec3(0,0.13,-0.2308625);
         Seats[0] = seat0;
 
-        SeatData seat1 = new SeatData();
-        seat1.seatOffset = new Vec3(0,0.125,-0.7933625);
+        Seat seat1 = new Seat();
+        seat1.seatOffset = new Vec3(0,0.13,-0.8558625);
         Seats[1] = seat1;
     }
 
@@ -116,8 +124,8 @@ public class Twinkie extends AbstractMotorcycle {
     protected void setupWheels() {
         Wheels = new ArrayList<>(2);
 
-        Wheels.add(0, new WheelProperties());
-        Wheels.add(1, new WheelProperties());
+        Wheels.add(0, new Wheel());
+        Wheels.add(1, new Wheel());
 
         // Divide this by 16, because it works better and results in more realistic proportions
         Wheels.get(0).radius = 0.253125;

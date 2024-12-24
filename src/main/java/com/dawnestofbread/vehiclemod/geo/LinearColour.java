@@ -28,19 +28,19 @@ public class LinearColour {
     }
 
     public float getR() {
-        return Mth.clamp(r * 255, 0, 255);
+        return Mth.clamp(r, 0, 1);
     }
 
     public float getG() {
-        return Mth.clamp(g * 255, 0, 255);
+        return Mth.clamp(g, 0, 1);
     }
 
     public float getB() {
-        return Mth.clamp(b * 255, 0, 255);
+        return Mth.clamp(b, 0, 1);
     }
 
     public float getA() {
-        return Mth.clamp(a * 255, 0, 255);
+        return Mth.clamp(a, 0, 1);
     }
 
     public LinearColour multiplyRGB(LinearColour colour) {

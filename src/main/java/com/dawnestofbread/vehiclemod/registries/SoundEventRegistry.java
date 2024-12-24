@@ -20,4 +20,14 @@ public class SoundEventRegistry {
     public static final RegistryObject<SoundEvent> SCOOTER_MOVING = SOUND_EVENTS.register("scooter.moving",
             () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(MODID, "scooter.moving"))
     );
+
+    public static final RegistryObject<SoundEvent> PICKUP01_IDLE = SOUND_EVENTS.register("pickup01.idle",
+            () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(MODID, "pickup01.idle"))
+    );
+    public static final RegistryObject<SoundEvent> PICKUP01_LO = SOUND_EVENTS.register("pickup01.lo",
+            () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(MODID, "pickup01.lo"))
+    );
+    public static final RegistryObject<SoundEvent> PICKUP01_HI = SOUND_EVENTS.register("pickup01.hi",
+            () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(MODID, "pickup01.hi"))
+    );
 }

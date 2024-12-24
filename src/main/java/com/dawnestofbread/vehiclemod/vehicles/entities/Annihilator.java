@@ -1,15 +1,18 @@
 package com.dawnestofbread.vehiclemod.vehicles.entities;
 
 import com.dawnestofbread.vehiclemod.WheeledVehicle;
+import com.dawnestofbread.vehiclemod.client.audio.AudioManager;
 import com.dawnestofbread.vehiclemod.utils.Curve;
-import com.dawnestofbread.vehiclemod.utils.SeatData;
-import com.dawnestofbread.vehiclemod.utils.WheelProperties;
+import com.dawnestofbread.vehiclemod.utils.Seat;
+import com.dawnestofbread.vehiclemod.utils.Wheel;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.*;
+
+import static com.dawnestofbread.vehiclemod.registries.SoundEventRegistry.*;
 
 public class Annihilator extends WheeledVehicle {
 
@@ -41,7 +44,7 @@ public class Annihilator extends WheeledVehicle {
 
         // Really important values here, you should try to get them right
         this.idleRPM = 600;
-        this.maxRPM = 6000;
+        this.maxRPM = 5500;
         this.mass = 1900;
         this.brakingConstant = 10000;
 
@@ -57,8 +60,8 @@ public class Annihilator extends WheeledVehicle {
         tempTCurve.add(2, 290d);
         tempTCurve.add(3, 310d);
         tempTCurve.add(4, 370d);
-        tempTCurve.add(5, 400d);
-        tempTCurve.add(6, 300d);
+        tempTCurve.add(5, 300d);
+        tempTCurve.add(6, 200d);
         this.transmissionEfficiency = .7;
         this.torqueCurve = new Curve(tempTCurve);
 
@@ -74,45 +77,44 @@ public class Annihilator extends WheeledVehicle {
         this.gearRatios[6] = 0.74;
 
         // Used for the automatic gearbox
-        this.shiftUpRPM = 3000;
+        this.shiftUpRPM = 4000;
         this.shiftDownRPM = 2500;
         // In seconds
         this.timeToShift = .15;
 
         // How much the wheels turn; NOT using Ackermann steering geometry
-        this.steeringAngle = 35;
-
-        // Traction/grip while turning (0-1 range; 1 meaning great, 0 meaning awful)
-        this.traction = 0.73;
+        this.steeringAngle = 32;
 
         // 0-1
         this.exhaustFumeAmount = .8f;
         this.exhaust = new Vec3[1];
         this.exhaust[0] = new Vec3(-1.114375, 0.920625, -5.2675);
 
-        this.engineSounds = new HashMap<>();
+        this.engineSounds = new HashMap<>(2);
+        this.engineSounds.put(AudioManager.SoundType.ENGINE_IDLE, PICKUP01_IDLE.get());
+        this.engineSounds.put(AudioManager.SoundType.ENGINE_MOVING, PICKUP01_LO.get());
     }
 
     // Create the seats and set their offsets
     @Override
     protected void setupSeats() {
-        Seats = new SeatData[4];
+        Seats = new Seat[4];
 
         // This is divided by 16
-        SeatData seat0 = new SeatData();
+        Seat seat0 = new Seat();
         seat0.seatOffset = new Vec3(0.40625,0.090625,1.88125 - 1.5625);
         Seats[0] = seat0;
 
-        SeatData seat1 = new SeatData();
+        Seat seat1 = new Seat();
         seat1.seatOffset = new Vec3(-0.40625,0.090625,1.88125 - 1.5625);
         Seats[1] = seat1;
 
-        SeatData seat2 = new SeatData();
+        Seat seat2 = new Seat();
         seat2.seatOffset = new Vec3(0.6, 0.6, .7984375 - 1.5625);
         seat2.yawOffset = 90;
         Seats[2] = seat2;
 
-        SeatData seat3 = new SeatData();
+        Seat seat3 = new Seat();
         seat3.seatOffset = new Vec3(-0.6, 0.6, .7984375 - 1.8125);
         seat3.yawOffset = -90;
         Seats[3] = seat3;
@@ -124,7 +126,7 @@ public class Annihilator extends WheeledVehicle {
         Wheels = new ArrayList<>(4);
 
         for (int i1 = 0; i1 < 4; i1++) {
-            Wheels.add(i1, new WheelProperties());
+            Wheels.add(i1, new Wheel());
         }
 
         // Divide this by 16, because it works better and results in more realistic proportions

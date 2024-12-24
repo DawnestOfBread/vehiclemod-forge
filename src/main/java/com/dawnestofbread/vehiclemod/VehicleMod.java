@@ -2,7 +2,6 @@ package com.dawnestofbread.vehiclemod;
 
 import com.dawnestofbread.vehiclemod.client.handlers.PlayerTransformHandler;
 import com.dawnestofbread.vehiclemod.network.PacketHandler;
-import com.eliotlash.mclib.math.Variable;
 import com.mojang.logging.LogUtils;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
@@ -16,7 +15,6 @@ import net.minecraftforge.fml.event.lifecycle.InterModProcessEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
-import software.bernie.geckolib.core.molang.MolangParser;
 
 import static com.dawnestofbread.vehiclemod.registries.EntityRendererRegistry.RegisterAllRenderers;
 import static com.dawnestofbread.vehiclemod.registries.SoundEventRegistry.RegisterAllSoundEvents;
@@ -43,8 +41,6 @@ public class VehicleMod
         RegisterAllSoundEvents();
         MinecraftForge.EVENT_BUS.register(this);
         MinecraftForge.EVENT_BUS.register(new PlayerTransformHandler());
-        MolangParser parser = MolangParser.INSTANCE;
-        parser.register(new Variable("query.wheel0_xRot", 0));
     }
 
     private void setup(final FMLCommonSetupEvent event)

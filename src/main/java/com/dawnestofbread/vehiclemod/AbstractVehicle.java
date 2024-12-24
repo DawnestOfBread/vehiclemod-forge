@@ -2,9 +2,11 @@ package com.dawnestofbread.vehiclemod;
 
 import com.dawnestofbread.vehiclemod.client.audio.AudioManager;
 import com.dawnestofbread.vehiclemod.client.audio.SimpleEngineSound;
+import com.dawnestofbread.vehiclemod.geo.Bone;
+import com.dawnestofbread.vehiclemod.geo.Transform;
 import com.dawnestofbread.vehiclemod.network.*;
 import com.dawnestofbread.vehiclemod.utils.MathUtils;
-import com.dawnestofbread.vehiclemod.utils.SeatData;
+import com.dawnestofbread.vehiclemod.utils.Seat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -29,42 +31,38 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
-import software.bernie.geckolib.animatable.GeoEntity;
-import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.core.animation.AnimatableManager;
-import software.bernie.geckolib.core.animation.AnimationController;
-import software.bernie.geckolib.core.animation.AnimationState;
-import software.bernie.geckolib.core.animation.RawAnimation;
-import software.bernie.geckolib.core.object.PlayState;
-import software.bernie.geckolib.util.GeckoLibUtil;
 
 import java.util.*;
 
-import static com.dawnestofbread.vehiclemod.client.audio.AudioManager.*;
+import static com.dawnestofbread.vehiclemod.client.audio.AudioManager.playEngineSound;
+import static com.dawnestofbread.vehiclemod.utils.VectorUtils.rotateVectorToEntitySpace;
 
-public abstract class AbstractVehicle extends Entity implements GeoEntity {
+public abstract class AbstractVehicle extends Entity {
     public static final Logger LOGGER = VehicleMod.LOGGER;
     protected static final EntityDataAccessor<Float> THROTTLE = SynchedEntityData.defineId(AbstractVehicle.class, EntityDataSerializers.FLOAT);
     protected static final EntityDataAccessor<Float> STEERING = SynchedEntityData.defineId(AbstractVehicle.class, EntityDataSerializers.FLOAT);
     private static final EntityDataAccessor<CompoundTag> SEAT_MANAGER = SynchedEntityData.defineId(AbstractVehicle.class, EntityDataSerializers.COMPOUND_TAG);
     protected final WeakHashMap<AbstractVehicle, EnumMap<AudioManager.SoundType, SimpleEngineSound>> SOUND_MANAGER = new WeakHashMap<>();
+    protected final double gravity = 9.81;
+    protected final double timeStep = 1d / 120d;
+    private final HashMap<Bone, Transform> boneTransforms = new HashMap<>();
     public List<UUID> SeatManager;
-    public SeatData[] Seats;
-    public float passengerXRot;
-    public float passengerZRot;
+    public Seat[] Seats;
     public double width;
     public double length;
     public double height;
     public Map<AudioManager.SoundType, SoundEvent> engineSounds;
     public float throttle = 0;
-    public float steeringInput = 0;
-    public float steering = 0;
     public float handbrake = 0;
     public float sprint = 0;
+    protected Vec3 passengerRotationOffset = Vec3.ZERO;
+    protected Vec3 passengerPositionOffset = Vec3.ZERO;
+    protected float steeringInput = 0;
+    protected float steering = 0;
     protected double RPM = 0;
     protected AABB[] collision;
     protected Vec3 forward;
-    protected final double gravity = 9.81;
+    protected Vec3 velocity = Vec3.ZERO;
     protected int lerpSteps;
     protected double lerpX;
     protected double lerpXRot;
@@ -72,21 +70,15 @@ public abstract class AbstractVehicle extends Entity implements GeoEntity {
     protected double lerpYRot;
     protected double lerpZ;
     protected double mass = 1000;
+    protected double accumulatedTime;
+    protected Vec3 translationOffset = Vec3.ZERO;
     boolean inputForward = false;
     boolean inputBackward = false;
     boolean inputRight = false;
     boolean inputLeft = false;
     boolean inputJump = false;
     boolean inputSprint = false;
-    private Vec3 translationOffset = new Vec3(0, 0, 0);
     private float zRot;
-    protected double accumulatedTime;
-    protected final double timeStep = 1d/60d;
-
-    public boolean isEngineOn() {
-        return !SeatManager.get(0).equals(UUID.fromString("00000000-0000-0000-0000-000000000000"));
-    }
-
     protected AbstractVehicle(EntityType<? extends Entity> entityType, Level worldIn) {
         super(entityType, worldIn);
         this.noPhysics = false;
@@ -94,18 +86,49 @@ public abstract class AbstractVehicle extends Entity implements GeoEntity {
         this.setupSeats();
     }
 
+    public Vec3 getPassengerRotationOffset() {
+        return passengerRotationOffset;
+    }
+
+    public void setPassengerRotationOffset(Vec3 passengerRotationOffset) {
+        this.passengerRotationOffset = passengerRotationOffset;
+    }
+    public void setPassengerRotationOffset(double d0, double d1, double d2) {
+        this.passengerRotationOffset = new Vec3(d0, d1, d2);
+    }
+
+    public Vec3 getPassengerPositionOffset() {
+        return passengerPositionOffset;
+    }
+
+    public void setPassengerPositionOffset(Vec3 passengerPositionOffset) {
+        this.passengerPositionOffset = passengerPositionOffset;
+    }
+
+    public float getSteeringInput() {
+        return steeringInput;
+    }
+
+    public float getSteering() {
+        return steering;
+    }
+
+    public void setSteering(float input) {
+        this.steeringInput = input;
+    }
+
+    public HashMap<Bone, Transform> getBoneTransforms() {
+        return boneTransforms;
+    }
+
+    public boolean isEngineOn() {
+        return !SeatManager.get(0).equals(UUID.fromString("00000000-0000-0000-0000-000000000000"));
+    }
+
     protected abstract void setupSeats();
 
     public Vec3 getTranslationOffset() {
         return translationOffset;
-    }
-
-    public void setTranslationOffset(Vec3 translationOffset) {
-        this.translationOffset = translationOffset;
-    }
-
-    public void setTranslationOffset(double x, double y, double z) {
-        this.translationOffset = new Vec3(x, y, z);
     }
 
     protected final void writeFloatTag(EntityDataAccessor<Float> dataAccessor, float in) {
@@ -187,7 +210,7 @@ public abstract class AbstractVehicle extends Entity implements GeoEntity {
                 int closestSeatIndex = -1;
                 double closestDistance = 0;
                 for (int i = 0; i < Seats.length; i++) {
-                    SeatData seat = Seats[i];
+                    Seat seat = Seats[i];
                     if (!SeatManager.get(i).equals(UUID.fromString("00000000-0000-0000-0000-000000000000"))) continue;
 
                     Vec3 seatVec = seat.seatOffset.yRot(-this.getYRot() * ((float) Math.PI / 180F)).add(this.position());
@@ -271,11 +294,11 @@ public abstract class AbstractVehicle extends Entity implements GeoEntity {
     protected void updatePassengerPosition(Entity passenger) {
         if (passenger.level().isClientSide() && this.hasPassenger(passenger)) {
             if (!SeatManager.contains(passenger.getUUID())) return;
-            SeatData seat = Seats[SeatManager.indexOf(passenger.getUUID())];
+            Seat seat = Seats[SeatManager.indexOf(passenger.getUUID())];
 
             if (seat == null) return;
             passenger.setYBodyRot(this.getYRot() + seat.yawOffset);
-            Vec3 position = new Vec3(this.position().x, this.position().y, this.position().z).add(seat.seatOffset.zRot((float) Math.toRadians(passengerZRot)).yRot(-this.getYRot() * ((float) Math.PI / 180F)));
+            Vec3 position = new Vec3(this.position().x, this.position().y, this.position().z).add(rotateVectorToEntitySpace(seat.seatOffset, this));
             //position = position.yRot((this.getYRot()));
             passenger.setPos(position);
         }
@@ -337,10 +360,6 @@ public abstract class AbstractVehicle extends Entity implements GeoEntity {
         this.sprint = input;
     }
 
-    public void setSteering(float input) {
-        this.steeringInput = input;
-    }
-
     public void setHandbrake(float input) {
         this.handbrake = input;
     }
@@ -361,7 +380,7 @@ public abstract class AbstractVehicle extends Entity implements GeoEntity {
         }
     }
 
-    protected void UpdateCamera(double deltaTime) {
+    protected void updateCamera(double deltaTime) {
         Entity camera = Minecraft.getInstance().cameraEntity;
 
         float xPos = MathUtils.fInterpToExp((float) Objects.requireNonNull(camera).getX(), (float) this.getX(), 3f, (float) deltaTime);
@@ -376,12 +395,12 @@ public abstract class AbstractVehicle extends Entity implements GeoEntity {
         return aabb.intersects(new AABB(pos)) && !getBlockAtPos(pos).isAir();
     }
 
+    // Overriding the move method, because 'collide' is private
+    // 99% of this is unchanged, except for the 'this.collide()' call
+
     protected BlockState getBlockAtPos(BlockPos pos) {
         return this.level().getBlockState(pos);
     }
-
-    // Overriding the move method, because 'collide' is private
-    // 99% of this is unchanged, except for the 'this.collide()' call
 
     private Vec3 doCollide(Vec3 motion) {
         double d1 = motion.x;
@@ -395,7 +414,6 @@ public abstract class AbstractVehicle extends Entity implements GeoEntity {
         }
         return new Vec3(d1 == 0 ? 0 : motion.x, d2 == 0 ? 0 : motion.y, d3 == 0 ? 0 : motion.z);
     }
-
 
     private Vec3 doCollisionCheckForAABB(AABB aabb, Vec3 motion) {
         List<VoxelShape> list = this.level().getEntityCollisions(this, aabb.expandTowards(motion));
@@ -421,19 +439,5 @@ public abstract class AbstractVehicle extends Entity implements GeoEntity {
         }
 
         return vec3;
-    }
-    private final AnimatableInstanceCache geoCache = GeckoLibUtil.createInstanceCache(this);
-    @Override
-    public void registerControllers(final AnimatableManager.ControllerRegistrar controllers) {
-        controllers.add(new AnimationController<>(this, "Flying", 0, this::flyAnimController));
-    }
-
-    protected <E extends AbstractVehicle> PlayState flyAnimController(final AnimationState<E> event) {
-        return event.setAndContinue(RawAnimation.begin().thenLoop("programmable"));
-    }
-
-    @Override
-    public AnimatableInstanceCache getAnimatableInstanceCache() {
-        return this.geoCache;
     }
 }

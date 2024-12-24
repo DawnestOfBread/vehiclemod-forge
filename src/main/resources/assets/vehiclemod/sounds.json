@@ -14,5 +14,29 @@
         "stream": true
       }
     ]
+  },
+  "pickup01.idle": {
+    "sounds": [
+      {
+        "name": "vehiclemod:loops/pickup01/idle",
+        "stream": true
+      }
+    ]
+  },
+  "pickup01.lo": {
+    "sounds": [
+      {
+        "name": "vehiclemod:loops/pickup01/lo",
+        "stream": true
+      }
+    ]
+  },
+  "pickup01.hi": {
+    "sounds": [
+      {
+        "name": "vehiclemod:loops/pickup01/hi",
+        "stream": true
+      }
+    ]
   }
 }

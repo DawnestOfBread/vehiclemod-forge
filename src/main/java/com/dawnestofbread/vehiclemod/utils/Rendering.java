@@ -14,7 +14,7 @@ public class Rendering {
         vertexConsumer.vertex(pose.pose(), (float) vec1.x, (float) vec1.y, (float) vec1.z).color(red, green, blue, 1.0f).normal(pose.normal(), 0.0F, 1.0F, 0.0F).endVertex();
         vertexConsumer.vertex(pose.pose(), (float) vec2.x, (float) vec2.y, (float) vec2.z).color(red, green, blue, 1.0f).normal(pose.normal(), 0.0F, 1.0F, 0.0F).endVertex();
     }
-    public static void renderBox(PoseStack poseStack, VertexConsumer vertexConsumer, AABB aabb, float red, float green, float blue) {
+    public static void drawBox(PoseStack poseStack, VertexConsumer vertexConsumer, AABB aabb, float red, float green, float blue) {
         PoseStack.Pose pose = poseStack.last();
 
         // Bottom edges

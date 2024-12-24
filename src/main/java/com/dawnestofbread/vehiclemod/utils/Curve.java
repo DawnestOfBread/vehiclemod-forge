@@ -8,8 +8,8 @@ public class Curve {
         this.curvePoints = newCurvePoints;
     }
 
-    public double lookup(double key) {
-        int lookupKey = (int) Math.floor(key / 1000);
+    public double lookup(double key, double factor) {
+        int lookupKey = (int) Math.floor(key / factor);
         if (lookupKey < (curvePoints.size() - 1)) {
             if (curvePoints.get(lookupKey) != null) {
                 if (lookupKey + 1 < curvePoints.size()) {

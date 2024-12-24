@@ -3,7 +3,7 @@ package com.dawnestofbread.vehiclemod.utils;
 
 import net.minecraft.world.phys.Vec3;
 
-public class WheelProperties {
+public class Wheel {
     public Vec3 startingRelativePosition;
     public boolean affectedBySteering;
     public boolean affectedByEngine;
