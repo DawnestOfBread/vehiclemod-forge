@@ -203,7 +203,8 @@ public abstract class WheeledVehicle extends AbstractVehicle {
         this.lerpX = x;
         this.lerpY = y;
         this.lerpZ = z;
-        this.lerpYRot = yaw + (1 - traction) * (steering * 2 * steeringAngle);
+        // Completely made-up and probably subject to change
+        this.lerpYRot = yaw + (1 - traction) * ((steering * 2 * steeringAngle) / (this.mass * Mth.square(this.length) / 850));
         this.lerpXRot = pitch;
         this.lerpSteps = posRotationIncrements;
     }
@@ -277,16 +278,13 @@ public abstract class WheeledVehicle extends AbstractVehicle {
 
         weight = mass * gravity;
 
-        driveWheelAngularVelocity = braking ? 0 : forwardSpeed / driveWheel.radius;
+        driveWheelAngularVelocity = forwardSpeed / driveWheel.radius;
 
         RPM = Mth.clamp(Math.abs(driveWheelAngularVelocity * gearRatios[currentGear] * differentialRatio * 15) + idleRPM, idleRPM, maxRPM);
         this.writeFloatTag(RPM_SYNC, (float) RPM);
         engineTorque = Math.abs(throttle) * torqueCurve.lookup(RPM, 1000);
 
         driveTorque = engineTorque * gearRatios[currentGear] * differentialRatio * transmissionEfficiency;
-
-        slipRatio = ((driveWheelAngularVelocity * driveWheel.radius) - forwardSpeed) / forwardSpeed;
-        slipRatio /= 1000;
 
         // Forward motion ends right about here
         // Onto steering now
@@ -308,7 +306,7 @@ public abstract class WheeledVehicle extends AbstractVehicle {
         this.writeFloatTag(TRACTION, (float) traction);
         lateralForce = forward.yRot((float) Math.toRadians(steeringDelta + (90 - Math.abs(steeringDelta)) * (1 - traction) * Math.signum(steeringDelta))).normalize().scale(Math.abs(steeringDelta) * driftIntensity * .65);
         Vec3 counterForce = forward.reverse().scale(driftIntensity * .025); // Counteracting force to balance drift
-        //forwardVelocity = forwardVelocity.add(counterForce);
+        forwardVelocity = forwardVelocity.add(counterForce);
 
         velocity = rotateVectorToEntitySpace(forwardVelocity, this).add(rotateVectorToEntitySpace(lateralForce, this));
 
@@ -373,7 +371,6 @@ public abstract class WheeledVehicle extends AbstractVehicle {
         AABB aabb = new AABB(offsetStart.x, offsetStart.y, offsetStart.z, offsetEnd.x, offsetEnd.y, offsetEnd.z);
 
         return lineTraceByType(lineTraceStart, lineTraceEnd, ClipContext.Block.OUTLINE, ClipContext.Fluid.NONE, this);
-        //return isCollidingWithBlocks(new BlockPos((int) Mth.floor(offsetCentre.x), (int) Mth.floor(offsetCentre.y), (int) Mth.floor(offsetCentre.z)).below(), aabb.expandTowards(0,-1,0));
     }
 
     protected void simulateVehicleClient(double deltaTime) {
@@ -447,11 +444,9 @@ public abstract class WheeledVehicle extends AbstractVehicle {
         double result = Math.random();
 
         HitResult climbTrace = checkWheelShouldClimbRaycast(wheel);
-        if (climbTrace.hit() && !climbTrace.isInside()) {
+        if (climbTrace.hit() && !climbTrace.isInside())
             wheel.targetWorldPosition = climbTrace.getHitLocation().add(0, wheel.radius, 0).add(rotateVectorToEntitySpaceYOnly(new Vec3(0, 0, Math.sqrt(Math.pow(climbTrace.getStart().x - climbTrace.getHitLocation().x, 2) + Math.pow(climbTrace.getStart().z - climbTrace.getHitLocation().z, 2)) * -movementDirection), this));
-        } else {
-            wheel.targetWorldPosition = wheel.currentRelativePosition.add(this.position());
-        }
+        else wheel.targetWorldPosition = wheel.currentRelativePosition.add(this.position());
 
         if (wheel.onGround) {
             if (result < probability && wheel.affectedByEngine)
@@ -497,8 +492,6 @@ public abstract class WheeledVehicle extends AbstractVehicle {
         double vehicleY = minY + baseHeight;
 
         setXRot((float) Math.toDegrees(pitch));
-        //translationOffset = new Vec3(0, vehicleY, 0);
-        //setPos(this.getX(), this.getY() + yDifference,this.getZ());
     }
 
     public Vec3 calculateMidpointWorld(List<Wheel> wheels) {

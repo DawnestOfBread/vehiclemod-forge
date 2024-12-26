@@ -88,11 +88,10 @@ public class Twinkie extends AbstractMotorcycle {
 
         // Used for the automatic gearbox
         this.shiftUpRPM = 4200;
-        this.shiftDownRPM = 2700;
+        this.shiftDownRPM = 2800;
         // In seconds
         this.timeToShift = .25;
 
-        // How much the wheels turn; NOT using Ackermann steering geometry
         this.steeringAngle = 25;
 
         // 0-1

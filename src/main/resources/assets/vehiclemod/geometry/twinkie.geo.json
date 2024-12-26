@@ -835,14 +835,14 @@
 					]
 				},
 				{
-					"name": "additionalTurningComponent",
+					"name": "steeringComponent",
 					"parent": "body",
 					"pivot": [0, 9.3791, 10.98145],
 					"rotation": [22.50309, 0.92387, 0.38272]
 				},
 				{
 					"name": "rotationOffset",
-					"parent": "additionalTurningComponent",
+					"parent": "steeringComponent",
 					"pivot": [0, 9.3791, 10.98145],
 					"rotation": [-67.5, 0, 0]
 				},

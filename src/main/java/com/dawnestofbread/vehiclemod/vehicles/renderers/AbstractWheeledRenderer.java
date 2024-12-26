@@ -30,9 +30,13 @@ public abstract class AbstractWheeledRenderer<T extends WheeledVehicle> extends 
         super(context, modelLocation);
     }
 
+    protected double calculateSteering(Transform boneTransform, T entity, float partialTick) {
+        return dInterpTo(boneTransform.getRotY(),-entity.getSteering() * entity.getSteeringAngle() * mapDoubleRangeClamped(entity.getTraction(), 0, .5, -1, 1), 1.5, partialTick);
+    }
+
     @Override
     public void onRender(@NotNull T entity, float entityYaw, PoseStack poseStack, MultiBufferSource bufferSource, float partialTick, int packedLight, int packedOverlay, LinearColour tint, HashMap<Bone, Transform> boneTransformHashMap) {
-        //drawDebug(entity, poseStack, bufferSource);
+        drawDebug(entity, poseStack, bufferSource);
     }
 
     @Override
@@ -41,7 +45,7 @@ public abstract class AbstractWheeledRenderer<T extends WheeledVehicle> extends 
         for (Wheel wheel : entity.getWheels()) {
             Transform t = boneTransforms.get(getModel().getBone("wheel" + entity.getWheels().indexOf(wheel)));
             t.setRotX(t.getRotX() + Math.toDegrees(wheel.angularVelocity / 2.5) * deltaTime);
-            if (wheel.affectedBySteering) t.setRotY(dInterpTo(t.getRotY(),-entity.getSteering() * entity.getSteeringAngle() * mapDoubleRangeClamped(entity.getTraction(), 0, 1, -1, 1), 1.5, partialTick));
+            if (wheel.affectedBySteering) t.setRotY(calculateSteering(t, entity, partialTick));
         }
     }
 
@@ -53,6 +57,9 @@ public abstract class AbstractWheeledRenderer<T extends WheeledVehicle> extends 
         }
         if (boneName.equals("root")) {
             handleRoot(entity, boneTransform, partialTick);
+        }
+        if (boneName.equals("steeringComponent")) {
+            boneTransform.setRotY(calculateSteering(boneTransform, entity, partialTick));
         }
     }
 

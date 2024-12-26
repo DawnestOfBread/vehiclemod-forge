@@ -21,12 +21,4 @@ public abstract class AbstractMotorcycleRenderer<T extends AbstractMotorcycle> e
         root.setRotZ(newRootZRot);
         entity.passengerTransform().addRotation(newRootXRot, 0, newRootZRot);
     }
-
-    @Override
-    public void onSetupBoneTransform(float partialTick, T entity, String boneName, Transform boneTransform) {
-        super.onSetupBoneTransform(partialTick, entity, boneName, boneTransform);
-        if (boneName.equals("additionalTurningComponent")) {
-            boneTransform.setRotY(dInterpTo(boneTransform.getRotY(),-entity.getSteering() * entity.getSteeringAngle() * mapDoubleRangeClamped(entity.getTraction(), 0, 1, -1, 1), 1.5, partialTick));
-        }
-    }
 }

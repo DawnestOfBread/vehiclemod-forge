@@ -59,6 +59,7 @@ public abstract class AbstractVehicle extends Entity {
     protected float steeringInput = 0;
     protected float steering = 0;
     protected double RPM = 0;
+    // TODO Implement collision system
     protected AABB[] collision;
     protected Vec3 forward;
     protected Vec3 velocity = Vec3.ZERO;
@@ -78,6 +79,7 @@ public abstract class AbstractVehicle extends Entity {
     boolean inputJump = false;
     boolean inputSprint = false;
     private float zRot;
+
     protected AbstractVehicle(EntityType<? extends Entity> entityType, Level worldIn) {
         super(entityType, worldIn);
         this.noPhysics = false;

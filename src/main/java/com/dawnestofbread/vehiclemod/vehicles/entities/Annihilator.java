@@ -69,7 +69,7 @@ public class Annihilator extends WheeledVehicle {
         this.differentialRatio = 3.42;
         this.gearRatios = new double[7];
         this.gearRatios[0] = -1.5; // Reverse
-        this.gearRatios[1] = 0.01; // Neutral
+        this.gearRatios[1] = 1; // Neutral
         this.gearRatios[2] = 2.66; // 1st
         this.gearRatios[3] = 1.78; // 2nd and so on...
         this.gearRatios[4] = 1.30;
@@ -78,11 +78,10 @@ public class Annihilator extends WheeledVehicle {
 
         // Used for the automatic gearbox
         this.shiftUpRPM = 4000;
-        this.shiftDownRPM = 2500;
+        this.shiftDownRPM = 2900;
         // In seconds
-        this.timeToShift = .15;
+        this.timeToShift = .5;
 
-        // How much the wheels turn; NOT using Ackermann steering geometry
         this.steeringAngle = 32;
 
         // 0-1
