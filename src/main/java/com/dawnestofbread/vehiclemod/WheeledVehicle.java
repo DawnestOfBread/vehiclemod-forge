@@ -50,21 +50,16 @@ public abstract class WheeledVehicle extends AbstractVehicle {
     public final double climbAmount = .5;
     protected final double dragConstant = 0.4257;
     protected final Vec3 gravitationalAcceleration = new Vec3(0, -9, 0);
-    private final Vec3 lateralVelocity = Vec3.ZERO;
     public double wheelBase;
     public Vec3 centreOfGeometry, frontAxle, rearAxle;
     protected double steeringAngle;
     protected List<Wheel> Wheels;
-    protected double maxBodyPitch; // How much the body rotates when shifting weight
-    protected double maxBodyRoll; // How much the body rotates when shifting weight
+    protected double maxBodyPitch, maxBodyRoll;
     protected Vec3 acceleration;
-    protected double angularAccelerationPitch;
     protected double angularVelocity;
-    protected double angularVelocityPitch;
     protected double baseHeight;
     protected boolean braking;
     protected Vec3 brakingForce, dragForce, lateralForce = Vec3.ZERO;
-    protected double centrifugalForceMultiplier;
     protected int currentGear;
     protected double differentialRatio;
     protected double brakingConstant;
@@ -79,22 +74,19 @@ public abstract class WheeledVehicle extends AbstractVehicle {
     protected Vec3 forwardVelocity = new Vec3(0, 0, 0);
     protected double[] gearRatios;
     protected double idleRPM, shiftUpRPM, shiftDownRPM, maxRPM, engineForce;
-    protected double inertiaPitch;
-    protected double lateralForceFront, lateralForceRear = 0;
     protected double movementDirection;
     protected double slipRatio;
-    protected double steeringDelta, circleRadius, frontSlipAngle, rearSlipAngle, sideslipAngle;
+    protected double steeringDelta, circleRadius;
     protected int targetGear;
     protected double timeToShift;
     protected Curve torqueCurve;
     protected Curve slipAngleCurve;
-    protected double torquePitch;
     protected double traction = 1;
     protected double transmissionEfficiency; // .7 - .9
     protected double weight, idleBrakeAmount = .1;
     private double weightTransferX, weightTransferZ; // 1 = full weight on front | -1 = full weight on rear
     private double shiftTimeLeft;
-    private Vec3 lateralAcceleration;
+
     protected WheeledVehicle(EntityType<? extends Entity> entityType, Level worldIn) {
         super(entityType, worldIn);
         this.setupWheels();
@@ -162,28 +154,46 @@ public abstract class WheeledVehicle extends AbstractVehicle {
         super.updatePassengerPosition(passenger);
         if (!this.level().isClientSide) {
             ServerPlayer castedEntity = (ServerPlayer) passenger;
+            // Temporary UI
             //                                                                                                 This should be multiplied by 3.6, but it's faked for gameplay’s sake
             // Display current speed and gear                                                                  Why lie to the player? Because I can!
             castedEntity.connection.send(new ClientboundSetActionBarTextPacket(Component.literal(Math.round(forwardSpeed * 4.3) + "km/h \n" + "Gear: " + (currentGear == 0 ? "R" : currentGear == 1 ? "N" : String.valueOf(currentGear - 1)) + "\nRPM: " + Math.round(RPM) + "\nTorque: " + Math.round(engineTorque) + "\nSpring length: " + Wheels.get(0).springLength * 100 + "cm"))); // Long boi
         }
     }
 
+    /**
+     * Helper method for checking which wheels are on the ground
+     *
+     * @param listIn list of wheels to check
+     */
     public List<Wheel> getWheelsOnGround(List<Wheel> listIn) {
         return listIn.stream().filter(wheel -> wheel.onGround).toList();
     }
 
+    /**
+     * Helper method for getting wheels with the affectedByEngine flag
+     */
     public List<Wheel> getPoweredWheels() {
         return Wheels.stream().filter(wheel -> wheel.affectedByEngine).toList();
     }
 
+    /**
+     * Helper method for getting wheels with the affectedBySteering flag
+     */
     public List<Wheel> getTurningWheels() {
         return Wheels.stream().filter(wheel -> wheel.affectedBySteering).toList();
     }
 
+    /**
+     * Helper method for getting wheels with the affectedByBrake flag
+     */
     public List<Wheel> getBrakingWheels() {
         return Wheels.stream().filter(wheel -> wheel.affectedByBrake).toList();
     }
 
+    /**
+     * Helper method for getting wheels with the affectedByHandbrake flag
+     */
     public List<Wheel> getHandBrakingWheels() {
         return Wheels.stream().filter(wheel -> wheel.affectedByHandbrake).toList();
     }
@@ -240,16 +250,26 @@ public abstract class WheeledVehicle extends AbstractVehicle {
 
         braking = (movementDirection > 0 && throttle < 0) || (movementDirection < 0 && throttle > 0) || throttle == 0 || handbrake > 0;
         this.writeBoolTag(BRAKING, braking);
+
+        // Calculate and scale brake force based on how many braking wheels are on the ground
         brakingForce = forward.reverse().scale(throttle != 0 ? brakingConstant : brakingConstant * idleBrakeAmount).scale(handbrake == 1 ? 2f : 1f).scale(movementDirection);
+        if (handbrake > 0)
+            brakingForce = brakingForce.scale((double) getWheelsOnGround(getHandBrakingWheels()).size() / getHandBrakingWheels().size());
+        else
+            brakingForce = brakingForce.scale((double) getWheelsOnGround(getBrakingWheels()).size() / getBrakingWheels().size());
+
+        // Calculate and scale drive force based on how many drive wheels are on the ground
+        double driveForce = (driveTorque / driveWheel.radius) * (double) getWheelsOnGround(getPoweredWheels()).size() / getPoweredWheels().size();
 
         if (braking) {
             acceleration = VectorUtils.divideVectorByScalar(brakingForce.add(dragForce), mass);
             if (acceleration.scale(deltaTime).length() > forwardSpeed) {
+                // Fixes jitter at very low speeds
                 acceleration = Vec3.ZERO;
                 forwardVelocity = Vec3.ZERO;
             }
         } else
-            acceleration = VectorUtils.divideVectorByScalar(new Vec3(0, 0, 1).scale(driveTorque / driveWheel.radius).scale(traction).add(dragForce), mass);
+            acceleration = VectorUtils.divideVectorByScalar(new Vec3(0, 0, 1).scale(driveForce).scale(traction).add(dragForce), mass);
 
         forwardVelocity = forwardVelocity.add(acceleration.scale(deltaTime));
         forwardSpeed = forwardVelocity.length();
@@ -519,6 +539,7 @@ public abstract class WheeledVehicle extends AbstractVehicle {
 
     @Override
     public boolean onGround() {
-        return super.onGround();
+        // Requires only one wheel to be on the ground to consider the vehicle grounded
+        return getWheelsOnGround(Wheels).size() > 0;
     }
 }
