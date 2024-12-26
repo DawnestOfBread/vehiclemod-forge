@@ -63,6 +63,7 @@ public abstract class AbstractWheeledRenderer<T extends WheeledVehicle> extends 
         double newZBodyRot = MathUtils.suspensionEasing(body.getRotZ(), -entity.getWeightTransferZ() * entity.getMaxBodyRoll(), 1, partialTick);
         body.setRotX(newXBodyRot);
         body.setRotZ(newZBodyRot);
+        entity.passengerTransform().addRotation(newXBodyRot, 0, newZBodyRot);
     }
 
     protected void drawDebug(T entity, PoseStack poseStack, MultiBufferSource bufferSource) {

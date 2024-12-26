@@ -19,7 +19,7 @@ public abstract class AbstractMotorcycleRenderer<T extends AbstractMotorcycle> e
         double newRootZRot = MathUtils.dInterpToExp(root.getRotZ(), (entity.getForwardSpeed() * (entity.getSteeringAngle() * entity.getSteering()) * (2 - entity.getTraction())) / 30, 1.5, partialTick * 0.05);
         root.setRotX(newRootXRot);
         root.setRotZ(newRootZRot);
-        entity.setPassengerRotationOffset(newRootXRot, 0, newRootZRot);
+        entity.passengerTransform().addRotation(newRootXRot, 0, newRootZRot);
     }
 
     @Override

@@ -1,6 +1,8 @@
 package com.dawnestofbread.vehiclemod.vehicles.entities;
 
 import com.dawnestofbread.vehiclemod.AbstractMotorcycle;
+import com.dawnestofbread.vehiclemod.animation.twinkie.TwinkieDriverPoseSet;
+import com.dawnestofbread.vehiclemod.animation.twinkie.TwinkiePassenger0PoseSet;
 import com.dawnestofbread.vehiclemod.client.audio.AudioManager;
 import com.dawnestofbread.vehiclemod.utils.Curve;
 import com.dawnestofbread.vehiclemod.utils.Seat;
@@ -111,11 +113,13 @@ public class Twinkie extends AbstractMotorcycle {
 
         // This is divided by 16
         Seat seat0 = new Seat();
-        seat0.seatOffset = new Vec3(0,0.13,-0.2308625);
+        seat0.seatOffset = new Vec3(0,0.125,-0.225);
+        seat0.animationSet = new TwinkieDriverPoseSet();
         Seats[0] = seat0;
 
         Seat seat1 = new Seat();
-        seat1.seatOffset = new Vec3(0,0.13,-0.8558625);
+        seat1.seatOffset = new Vec3(0,0.125,-0.8558625);
+        seat1.animationSet = new TwinkiePassenger0PoseSet();
         Seats[1] = seat1;
     }
 

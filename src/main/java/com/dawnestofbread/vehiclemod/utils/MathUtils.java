@@ -1,5 +1,8 @@
 package com.dawnestofbread.vehiclemod.utils;
 
+import com.dawnestofbread.vehiclemod.geo.Transform;
+import net.minecraft.world.phys.Vec3;
+
 public class MathUtils {
     public static float fInterpTo(float currentValue, float targetValue, float interpSpeed, float deltaTime) {
         // Calculate the difference between the current and target values
@@ -66,6 +69,14 @@ public class MathUtils {
         } else {
             return n1 * (x -= 2.625 / d1) * x + 0.984375;
         }
+    }
+
+    public static double easeOutExpo(double x) {
+        return x == 1 ? 1 : 1 - Math.pow(2, -10 * x);
+    }
+    public static Vec3 vecEaseOutExpo(double x, Vec3 start, Vec3 end) {
+        Vec3 diff = end.subtract(start);
+        return start.add(diff.scale(easeOutExpo(x)));
     }
 
     public static double mapDoubleRangeClamped(double value, double inMin, double inMax, double outMin, double outMax) {

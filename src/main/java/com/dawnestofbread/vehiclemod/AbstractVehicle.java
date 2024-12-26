@@ -47,7 +47,6 @@ public abstract class AbstractVehicle extends Entity {
     protected final double timeStep = 1d / 120d;
     private final HashMap<Bone, Transform> boneTransforms = new HashMap<>();
     public List<UUID> SeatManager;
-    public Seat[] Seats;
     public double width;
     public double length;
     public double height;
@@ -55,8 +54,8 @@ public abstract class AbstractVehicle extends Entity {
     public float throttle = 0;
     public float handbrake = 0;
     public float sprint = 0;
-    protected Vec3 passengerRotationOffset = Vec3.ZERO;
-    protected Vec3 passengerPositionOffset = Vec3.ZERO;
+    protected Seat[] Seats;
+    protected Transform passengerTransform = new Transform();
     protected float steeringInput = 0;
     protected float steering = 0;
     protected double RPM = 0;
@@ -86,24 +85,14 @@ public abstract class AbstractVehicle extends Entity {
         this.setupSeats();
     }
 
-    public Vec3 getPassengerRotationOffset() {
-        return passengerRotationOffset;
+    public Transform passengerTransform() {
+        return passengerTransform;
     }
 
-    public void setPassengerRotationOffset(Vec3 passengerRotationOffset) {
-        this.passengerRotationOffset = passengerRotationOffset;
-    }
-    public void setPassengerRotationOffset(double d0, double d1, double d2) {
-        this.passengerRotationOffset = new Vec3(d0, d1, d2);
+    public Seat[] getSeats() {
+        return Seats;
     }
 
-    public Vec3 getPassengerPositionOffset() {
-        return passengerPositionOffset;
-    }
-
-    public void setPassengerPositionOffset(Vec3 passengerPositionOffset) {
-        this.passengerPositionOffset = passengerPositionOffset;
-    }
 
     public float getSteeringInput() {
         return steeringInput;

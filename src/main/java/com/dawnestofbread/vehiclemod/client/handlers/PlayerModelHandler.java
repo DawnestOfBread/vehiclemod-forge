@@ -9,7 +9,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.client.event.RenderPlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-public class PlayerTransformHandler {
+public class PlayerModelHandler {
     @SubscribeEvent
     public void onPreRender(RenderPlayerEvent.Pre event)
     {
@@ -26,12 +26,12 @@ public class PlayerTransformHandler {
         int seatIndex = vehicle.SeatManager.indexOf(player.getUUID());
         if(seatIndex == -1) return;
 
-        Seat seat = vehicle.Seats[seatIndex];
+        Seat seat = vehicle.getSeats()[seatIndex];
         poseStack.mulPose(Axis.YP.rotationDegrees(-vehicle.getYRot()));
-        poseStack.translate(0, seat.seatOffset.y(), 0);
-        poseStack.mulPose(Axis.XP.rotationDegrees((float) vehicle.getPassengerRotationOffset().x));
-        poseStack.mulPose(Axis.ZP.rotationDegrees((float) vehicle.getPassengerRotationOffset().z));
         poseStack.translate(0, -seat.seatOffset.y(), 0);
+        poseStack.mulPose(Axis.XP.rotationDegrees((float) vehicle.passengerTransform().getRotX()));
+        poseStack.mulPose(Axis.ZP.rotationDegrees((float) vehicle.passengerTransform().getRotZ()));
+        poseStack.translate(0, seat.seatOffset.y(), 0);
         poseStack.mulPose(Axis.YP.rotationDegrees(vehicle.getYRot()));
     }
 }

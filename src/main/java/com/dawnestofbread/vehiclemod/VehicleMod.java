@@ -1,6 +1,6 @@
 package com.dawnestofbread.vehiclemod;
 
-import com.dawnestofbread.vehiclemod.client.handlers.PlayerTransformHandler;
+import com.dawnestofbread.vehiclemod.client.handlers.PlayerModelHandler;
 import com.dawnestofbread.vehiclemod.network.PacketHandler;
 import com.mojang.logging.LogUtils;
 import net.minecraftforge.api.distmarker.Dist;
@@ -40,7 +40,7 @@ public class VehicleMod
         RegisterAllVehicles();
         RegisterAllSoundEvents();
         MinecraftForge.EVENT_BUS.register(this);
-        MinecraftForge.EVENT_BUS.register(new PlayerTransformHandler());
+        MinecraftForge.EVENT_BUS.register(new PlayerModelHandler());
     }
 
     private void setup(final FMLCommonSetupEvent event)
