@@ -1,6 +1,7 @@
 package com.dawnestofbread.vehiclemod.client.audio;
 
 import com.dawnestofbread.vehiclemod.AbstractVehicle;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.AbstractTickableSoundInstance;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
@@ -24,7 +25,7 @@ public class SimpleEngineSound extends AbstractTickableSoundInstance {
         this.volume = 0.0F;
         this.pitch = 0.5F;
         this.looping = true;
-        this.delay = 0;
+        this.delay = -20;
     }
 
     @Override
@@ -37,9 +38,13 @@ public class SimpleEngineSound extends AbstractTickableSoundInstance {
         this.volume = (float) volume;
         return this;
     }
-    @SuppressWarnings("UnusedReturnValue")
+
     public SimpleEngineSound setPitch(double pitch) {
         this.pitch = (float) pitch;
+        return this;
+    }
+    public SimpleEngineSound setLoop(boolean looping) {
+        this.looping = looping;
         return this;
     }
 

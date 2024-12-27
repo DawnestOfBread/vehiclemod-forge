@@ -12,7 +12,9 @@ public class AudioManager {
     public enum SoundType
     {
         ENGINE_MOVING,
-        ENGINE_IDLE
+        ENGINE_IDLE,
+        ENGINE_LO,
+        ENGINE_HI
     }
     public static SimpleEngineSound playEngineSound(WeakHashMap<AbstractVehicle, EnumMap<SoundType, SimpleEngineSound>> SOUND_MANAGER, AbstractVehicle vehicle, SoundType soundType, SoundEvent soundEvent) {
         Map<SoundType, SimpleEngineSound> soundMap = SOUND_MANAGER.computeIfAbsent(vehicle, v -> new EnumMap<>(SoundType.class));
@@ -24,6 +26,16 @@ public class AudioManager {
             Minecraft.getInstance().getSoundManager().play(sound);
         }
         return sound;
+    }
+    public static void stopEngineSound(WeakHashMap<AbstractVehicle, EnumMap<SoundType, SimpleEngineSound>> SOUND_MANAGER, AbstractVehicle vehicle, SoundType soundType, SoundEvent soundEvent) {
+        Map<SoundType, SimpleEngineSound> soundMap = SOUND_MANAGER.computeIfAbsent(vehicle, v -> new EnumMap<>(SoundType.class));
+        SimpleEngineSound sound = soundMap.get(soundType);
+        if (sound == null) return;
+        if(!sound.isStopped() || Minecraft.getInstance().getSoundManager().isActive(sound))
+        {
+            soundMap.remove(soundType, sound);
+            Minecraft.getInstance().getSoundManager().stop(sound);
+        }
     }
 
     public static double calculateVolume(double rpm, double minRange, double maxRange) {

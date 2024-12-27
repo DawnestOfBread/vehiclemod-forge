@@ -23,6 +23,7 @@ public class Cube {
     private Vec3 pivot = Vec3.ZERO;
     private Vec3 rotation = Vec3.ZERO;
     private Vec3 size = Vec3.ZERO;
+    private float inflate = 0;
 
     public Cube(JsonObject cubeO, BedrockModel model, Bone bone) {
         this.model = model;
@@ -41,9 +42,13 @@ public class Cube {
             this.rotation = new Vec3(Math.toRadians(-rotation.get(0).getAsDouble()), Math.toRadians(-rotation.get(1).getAsDouble()), Math.toRadians(rotation.get(2).getAsDouble()));
         }
 
+        if (cubeO.has("inflate")) {
+            this.inflate = cubeO.get("inflate").getAsFloat();
+        }
+
         if (cubeO.has("size")) {
             JsonArray size = cubeO.get("size").getAsJsonArray();
-            this.size = new Vec3(size.get(0).getAsDouble() / 16, size.get(1).getAsDouble() / 16, size.get(2).getAsDouble() / 16);
+            this.size = new Vec3(size.get(0).getAsDouble() / 16, size.get(1).getAsDouble() / 16, size.get(2).getAsDouble() / 16).scale(this.inflate + 1);
             this.origin = new Vec3(-(this.origin.x + this.size.x), this.origin.y, this.origin.z);
         }
 
@@ -68,6 +73,10 @@ public class Cube {
 
             quads.add(buildQuad(x1, y1, z1, x2, y2, z2, dir));
         }
+    }
+
+    public float getInflation() {
+        return inflate;
     }
 
     public BedrockModel getModel() {

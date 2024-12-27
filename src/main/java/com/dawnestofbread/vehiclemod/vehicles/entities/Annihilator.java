@@ -91,7 +91,8 @@ public class Annihilator extends WheeledVehicle {
 
         this.engineSounds = new HashMap<>(2);
         this.engineSounds.put(AudioManager.SoundType.ENGINE_IDLE, PICKUP01_IDLE.get());
-        this.engineSounds.put(AudioManager.SoundType.ENGINE_MOVING, PICKUP01_LO.get());
+        this.engineSounds.put(AudioManager.SoundType.ENGINE_LO, PICKUP01_LO.get());
+        this.engineSounds.put(AudioManager.SoundType.ENGINE_HI, PICKUP01_HI.get());
     }
 
     // Create the seats and set their offsets

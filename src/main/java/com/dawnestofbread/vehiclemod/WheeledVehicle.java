@@ -28,12 +28,9 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.slf4j.Logger;
 
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
-import static com.dawnestofbread.vehiclemod.client.audio.AudioManager.calculateVolume;
+import static com.dawnestofbread.vehiclemod.client.audio.AudioManager.*;
 import static com.dawnestofbread.vehiclemod.utils.LineTrace.lineTraceByType;
 import static com.dawnestofbread.vehiclemod.utils.MathUtils.*;
 import static com.dawnestofbread.vehiclemod.utils.VectorUtils.rotateVectorToEntitySpace;
@@ -280,8 +277,8 @@ public abstract class WheeledVehicle extends AbstractVehicle {
 
         driveWheelAngularVelocity = forwardSpeed / driveWheel.radius;
 
-        RPM = Mth.clamp(Math.abs(driveWheelAngularVelocity * gearRatios[currentGear] * differentialRatio * 15) + idleRPM, idleRPM, maxRPM);
-        this.writeFloatTag(RPM_SYNC, (float) RPM);
+        RPM = (float) Mth.clamp(Math.abs(driveWheelAngularVelocity * gearRatios[currentGear] * differentialRatio * 15) + idleRPM, idleRPM, maxRPM);
+        this.writeFloatTag(RPM_SYNC, RPM);
         engineTorque = Math.abs(throttle) * torqueCurve.lookup(RPM, 1000);
 
         driveTorque = engineTorque * gearRatios[currentGear] * differentialRatio * transmissionEfficiency;
@@ -384,22 +381,36 @@ public abstract class WheeledVehicle extends AbstractVehicle {
         weightTransferX = this.readFloatTag(WEIGHT_TRANSFER_X);
         weightTransferZ = this.readFloatTag(WEIGHT_TRANSFER_Z);
 
-        RPM = dInterpTo(RPM, this.readFloatTag(RPM_SYNC), 3500f, deltaTime);
+        RPM = fInterpTo(RPM, this.readFloatTag(RPM_SYNC), 3500f, (float) deltaTime);
         traction = this.readFloatTag(TRACTION);
         braking = this.readBoolTag(BRAKING);
         updateWheelsClient(deltaTime);
 
-        Map<AudioManager.SoundType, SimpleEngineSound> soundMap = SOUND_MANAGER.computeIfAbsent(this, v -> new EnumMap<>(AudioManager.SoundType.class));
-        SimpleEngineSound idleSound = soundMap.get(AudioManager.SoundType.ENGINE_IDLE);
-        SimpleEngineSound movingSound = soundMap.get(AudioManager.SoundType.ENGINE_MOVING);
+        // Sound system
+        Map<AudioManager.SoundType, SimpleEngineSound> soundMap = SOUND_MANAGER.computeIfAbsent(this, v -> new EnumMap<>(SoundType.class));
+        SimpleEngineSound idleSound = soundMap.get(SoundType.ENGINE_IDLE);
+        SimpleEngineSound movingSound = soundMap.get(SoundType.ENGINE_MOVING);
+        SimpleEngineSound loSound = soundMap.get(SoundType.ENGINE_LO);
+        SimpleEngineSound hiSound = soundMap.get(SoundType.ENGINE_HI);
+        // Fake RPM when drifting
+        float RPM = (float) (this.RPM * Mth.clamp(1.5 - traction, 1, 1.5));
         if (idleSound != null)
             idleSound.setVolume(calculateVolume(RPM, 0, idleRPM + 1000)).setPitch(mapDoubleRangeClamped(RPM, idleRPM, idleRPM + 1500, 1, 1.4));
         if (movingSound != null)
             movingSound.setVolume(mapDoubleRangeClamped(RPM, idleRPM, idleRPM + 1000, 0, 1)).setPitch(mapDoubleRangeClamped(RPM, idleRPM, maxRPM, .9, 1.4));
+        if (loSound != null)
+            loSound.setVolume(
+                    RPM <= idleRPM + 1500 ? mapDoubleRangeClamped(RPM, idleRPM, idleRPM + 1500, 0, 1)
+                            : 1 - mapDoubleRangeClamped(RPM, idleRPM + 1500, maxRPM - 1000, 0, 1)
+            ).setPitch(mapDoubleRangeClamped(RPM, idleRPM, maxRPM, .85, 1.4));
+        if (loSound != null) LOGGER.info(String.valueOf(loSound.getVolume()));
+        if (hiSound != null)
+            hiSound.setVolume(mapDoubleRangeClamped(RPM, idleRPM, maxRPM, 0, 1.2)).setPitch(mapDoubleRangeClamped(RPM, idleRPM + 1500, maxRPM, .9, 1.4));
 
+        // Exhaust fumes
         if (this.isEngineOn()) {
             for (Vec3 pos : exhaust) {
-                for (int i = 0; i < Math.ceil(RPM / 250); i++) {
+                for (int i = 0; i < Math.ceil(RPM / 300); i++) {
                     Vec3 p = position().add(pos.xRot(this.getXRot()).yRot((float) Math.toRadians(-this.getYRot())).scale(.5));
                     Vec3 vel = forward.scale(-movementDirection / 8).add(0, -.05, 0);
 

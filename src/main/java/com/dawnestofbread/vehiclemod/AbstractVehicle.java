@@ -58,7 +58,7 @@ public abstract class AbstractVehicle extends Entity {
     protected Transform passengerTransform = new Transform();
     protected float steeringInput = 0;
     protected float steering = 0;
-    protected double RPM = 0;
+    protected float RPM = 0;
     // TODO Implement collision system
     protected AABB[] collision;
     protected Vec3 forward;
@@ -335,9 +335,11 @@ public abstract class AbstractVehicle extends Entity {
 //                UpdateCamera(deltaTime);
 
                 this.readSeatManager(this.entityData.get(SEAT_MANAGER));
-                if (engineSounds.containsKey(AudioManager.SoundType.ENGINE_IDLE) && engineSounds.containsKey(AudioManager.SoundType.ENGINE_MOVING) && !SeatManager.get(0).equals(UUID.fromString("00000000-0000-0000-0000-000000000000"))) {
-                    playEngineSound(SOUND_MANAGER, this, AudioManager.SoundType.ENGINE_IDLE, this.engineSounds.get(AudioManager.SoundType.ENGINE_IDLE)).setVolume(0f);
-                    playEngineSound(SOUND_MANAGER, this, AudioManager.SoundType.ENGINE_MOVING, this.engineSounds.get(AudioManager.SoundType.ENGINE_MOVING)).setVolume(0f);
+                if (this.isEngineOn()) {
+                    if (engineSounds.containsKey(AudioManager.SoundType.ENGINE_IDLE)) playEngineSound(SOUND_MANAGER, this, AudioManager.SoundType.ENGINE_IDLE, this.engineSounds.get(AudioManager.SoundType.ENGINE_IDLE)).setVolume(0f);
+                    if (engineSounds.containsKey(AudioManager.SoundType.ENGINE_MOVING)) playEngineSound(SOUND_MANAGER, this, AudioManager.SoundType.ENGINE_MOVING, this.engineSounds.get(AudioManager.SoundType.ENGINE_MOVING)).setVolume(0f);
+                    if (engineSounds.containsKey(AudioManager.SoundType.ENGINE_LO)) playEngineSound(SOUND_MANAGER, this, AudioManager.SoundType.ENGINE_LO, this.engineSounds.get(AudioManager.SoundType.ENGINE_LO)).setVolume(0f);
+                    if (engineSounds.containsKey(AudioManager.SoundType.ENGINE_HI)) playEngineSound(SOUND_MANAGER, this, AudioManager.SoundType.ENGINE_HI, this.engineSounds.get(AudioManager.SoundType.ENGINE_HI)).setVolume(0f);
                 }
             }
         }
