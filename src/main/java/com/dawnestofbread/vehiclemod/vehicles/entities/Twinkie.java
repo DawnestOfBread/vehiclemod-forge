@@ -4,14 +4,16 @@ import com.dawnestofbread.vehiclemod.AbstractMotorcycle;
 import com.dawnestofbread.vehiclemod.animation.twinkie.TwinkieDriverPoseSet;
 import com.dawnestofbread.vehiclemod.animation.twinkie.TwinkiePassenger0PoseSet;
 import com.dawnestofbread.vehiclemod.client.audio.AudioManager;
+import com.dawnestofbread.vehiclemod.collision.OBB;
 import com.dawnestofbread.vehiclemod.utils.Curve;
 import com.dawnestofbread.vehiclemod.utils.Seat;
 import com.dawnestofbread.vehiclemod.utils.Wheel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 import java.util.*;
 
@@ -26,9 +28,7 @@ public class Twinkie extends AbstractMotorcycle {
         SeatManager.add(0,UUID.fromString("00000000-0000-0000-0000-000000000000"));
         SeatManager.add(1,UUID.fromString("00000000-0000-0000-0000-000000000000"));
 
-        // WIP Set up collision boxes
-        this.collision = new AABB[1];
-        this.collision[0] = new AABB(-2.0625,0.75,-5.125, 2.0625,2.6875,0.5);
+        collisionBounds = new OBB(new Vector3f(0,0.78125f,0), new Vector3f(0.375f,0.59375f,1.0625f), new Quaternionf());
 
         // Some values required for maths; when getting them from Blockbench, divide the value by 8!
         this.frontAxle = new Vec3(0, 0.522025, 1.637475);
@@ -65,17 +65,6 @@ public class Twinkie extends AbstractMotorcycle {
         tempTCurve.add(6, 5d);
         this.transmissionEfficiency = .72;
         this.torqueCurve = new Curve(tempTCurve);
-
-        // Slip angle curve
-        List<Double> tempSACurve = new LinkedList<>();
-        tempSACurve.add(0, 5000d);
-        tempSACurve.add(1, -5500d);
-        tempSACurve.add(2, -5800d);
-        tempSACurve.add(3, 0d);
-        tempSACurve.add(4, 5800d);
-        tempSACurve.add(5, 5500d);
-        tempSACurve.add(6, 5000d);
-        this.slipAngleCurve = new Curve(tempSACurve);
 
         // Gear setup
         this.differentialRatio = 2.86;

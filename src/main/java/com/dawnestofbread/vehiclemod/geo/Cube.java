@@ -43,13 +43,13 @@ public class Cube {
         }
 
         if (cubeO.has("inflate")) {
-            this.inflate = cubeO.get("inflate").getAsFloat();
+            this.inflate = cubeO.get("inflate").getAsFloat() / 8;
         }
 
         if (cubeO.has("size")) {
             JsonArray size = cubeO.get("size").getAsJsonArray();
-            this.size = new Vec3(size.get(0).getAsDouble() / 16, size.get(1).getAsDouble() / 16, size.get(2).getAsDouble() / 16).scale(this.inflate + 1);
-            this.origin = new Vec3(-(this.origin.x + this.size.x), this.origin.y, this.origin.z);
+            this.size = new Vec3(size.get(0).getAsDouble() / 16, size.get(1).getAsDouble() / 16, size.get(2).getAsDouble() / 16).add(this.inflate, this.inflate, this.inflate);
+            this.origin = new Vec3(-(this.origin.x + this.size.x), this.origin.y, this.origin.z).add(this.inflate / 2, -this.inflate / 2, -this.inflate / 2);
         }
 
         for (Direction dir : Direction.values()) {

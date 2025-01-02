@@ -3,6 +3,8 @@
   "package": "com.dawnestofbread.vehiclemod.mixin",
   "refmap": "refmap.vehiclemod.json",
   "mixins": [],
-  "client": ["PlayerModelMixin"],
+  "client": [
+    "PlayerModelMixin"
+  ],
   "server": []
 }

@@ -6,7 +6,7 @@ import com.dawnestofbread.vehiclemod.utils.MathUtils;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.resources.ResourceLocation;
 
-import static com.dawnestofbread.vehiclemod.utils.MathUtils.*;
+import static com.dawnestofbread.vehiclemod.VehicleMod.LOGGER;
 
 public abstract class AbstractMotorcycleRenderer<T extends AbstractMotorcycle> extends AbstractWheeledRenderer<T> {
     public AbstractMotorcycleRenderer(EntityRendererProvider.Context context, ResourceLocation modelLocation) {
@@ -15,7 +15,7 @@ public abstract class AbstractMotorcycleRenderer<T extends AbstractMotorcycle> e
 
     @Override
     protected void handleRoot(T entity, Transform root, float partialTick) {
-        double newRootXRot = MathUtils.dInterpTo(root.getRotX(), entity.getXRot(), 1.5f, partialTick * 0.05);
+        double newRootXRot = MathUtils.dInterpTo(root.getRotX(), -entity.getXRot(), 15f, partialTick * 0.05);
         double newRootZRot = MathUtils.dInterpToExp(root.getRotZ(), (entity.getForwardSpeed() * (entity.getSteeringAngle() * entity.getSteering()) * (2 - entity.getTraction())) / 30, 1.5, partialTick * 0.05);
         root.setRotX(newRootXRot);
         root.setRotZ(newRootZRot);

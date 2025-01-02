@@ -2,6 +2,7 @@ package com.dawnestofbread.vehiclemod;
 
 import com.dawnestofbread.vehiclemod.client.audio.AudioManager;
 import com.dawnestofbread.vehiclemod.client.audio.SimpleEngineSound;
+import com.dawnestofbread.vehiclemod.collision.OBB;
 import com.dawnestofbread.vehiclemod.geo.Bone;
 import com.dawnestofbread.vehiclemod.geo.Transform;
 import com.dawnestofbread.vehiclemod.network.*;
@@ -21,6 +22,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -30,6 +32,9 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.jetbrains.annotations.NotNull;
+import org.joml.Intersectionf;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 import org.slf4j.Logger;
 
 import java.util.*;
@@ -60,7 +65,6 @@ public abstract class AbstractVehicle extends Entity {
     protected float steering = 0;
     protected float RPM = 0;
     // TODO Implement collision system
-    protected AABB[] collision;
     protected Vec3 forward;
     protected Vec3 velocity = Vec3.ZERO;
     protected int lerpSteps;
@@ -72,6 +76,7 @@ public abstract class AbstractVehicle extends Entity {
     protected double mass = 1000;
     protected double accumulatedTime;
     protected Vec3 translationOffset = Vec3.ZERO;
+    protected OBB collisionBounds;
     boolean inputForward = false;
     boolean inputBackward = false;
     boolean inputRight = false;
@@ -79,12 +84,24 @@ public abstract class AbstractVehicle extends Entity {
     boolean inputJump = false;
     boolean inputSprint = false;
     private float zRot;
+    private OBB actualCollision;
 
     protected AbstractVehicle(EntityType<? extends Entity> entityType, Level worldIn) {
         super(entityType, worldIn);
         this.noPhysics = false;
         this.ejectPassengers();
         this.setupSeats();
+    }
+
+    public OBB getCollisionBounds() {
+        return collisionBounds;
+    }
+
+    public OBB getActualCollision() {
+        return actualCollision;
+    }
+    public OBB getCollisionRelative() {
+        return new OBB(new Vector3f(this.actualCollision.getCentre()).sub(this.position().toVector3f()), this.collisionBounds.getHalfSize(), this.actualCollision.getOrientation());
     }
 
     public Transform passengerTransform() {
@@ -211,11 +228,11 @@ public abstract class AbstractVehicle extends Entity {
                         closestDistance = distance;
                     }
                 }
-                LOGGER.info("Seat info: " + closestSeatIndex + " - " + player.getName() + " - " + (player.level().isClientSide ? "Client" : "Server"));
-                LOGGER.info("Chosen 'closest' seat: " + closestSeatIndex + " with distance of " + closestDistance + " metres");
-                SeatManager.set(closestSeatIndex, player.getUUID());
-                this.entityData.set(SEAT_MANAGER, writeSeatManager(), true);
-                if (closestSeatIndex != -1) player.startRiding(this);
+                if (closestSeatIndex != -1) {
+                    SeatManager.set(closestSeatIndex, player.getUUID());
+                    this.entityData.set(SEAT_MANAGER, writeSeatManager(), true);
+                    player.startRiding(this);
+                }
                 return InteractionResult.SUCCESS;
             }
         }
@@ -306,6 +323,14 @@ public abstract class AbstractVehicle extends Entity {
 
     @SubscribeEvent
     public void tick(double deltaTime) {
+//        if (!this.level().isClientSide) {
+            this.actualCollision = new OBB(
+                    this.position().toVector3f().add(this.collisionBounds.getCentre()),
+                    this.collisionBounds.getHalfSize(),
+                    new Quaternionf().rotationXYZ((float) Math.toRadians(-this.getXRot()), (float) Math.toRadians(-this.getYRot()), (float) Math.toRadians(-this.getZRot()))
+            );
+//        }
+
         super.tick();
         this.lerpTick();
 
@@ -336,14 +361,55 @@ public abstract class AbstractVehicle extends Entity {
 
                 this.readSeatManager(this.entityData.get(SEAT_MANAGER));
                 if (this.isEngineOn()) {
-                    if (engineSounds.containsKey(AudioManager.SoundType.ENGINE_IDLE)) playEngineSound(SOUND_MANAGER, this, AudioManager.SoundType.ENGINE_IDLE, this.engineSounds.get(AudioManager.SoundType.ENGINE_IDLE)).setVolume(0f);
-                    if (engineSounds.containsKey(AudioManager.SoundType.ENGINE_MOVING)) playEngineSound(SOUND_MANAGER, this, AudioManager.SoundType.ENGINE_MOVING, this.engineSounds.get(AudioManager.SoundType.ENGINE_MOVING)).setVolume(0f);
-                    if (engineSounds.containsKey(AudioManager.SoundType.ENGINE_LO)) playEngineSound(SOUND_MANAGER, this, AudioManager.SoundType.ENGINE_LO, this.engineSounds.get(AudioManager.SoundType.ENGINE_LO)).setVolume(0f);
-                    if (engineSounds.containsKey(AudioManager.SoundType.ENGINE_HI)) playEngineSound(SOUND_MANAGER, this, AudioManager.SoundType.ENGINE_HI, this.engineSounds.get(AudioManager.SoundType.ENGINE_HI)).setVolume(0f);
+                    if (engineSounds.containsKey(AudioManager.SoundType.ENGINE_IDLE))
+                        playEngineSound(SOUND_MANAGER, this, AudioManager.SoundType.ENGINE_IDLE, this.engineSounds.get(AudioManager.SoundType.ENGINE_IDLE)).setVolume(0f);
+                    if (engineSounds.containsKey(AudioManager.SoundType.ENGINE_MOVING))
+                        playEngineSound(SOUND_MANAGER, this, AudioManager.SoundType.ENGINE_MOVING, this.engineSounds.get(AudioManager.SoundType.ENGINE_MOVING)).setVolume(0f);
+                    if (engineSounds.containsKey(AudioManager.SoundType.ENGINE_LO))
+                        playEngineSound(SOUND_MANAGER, this, AudioManager.SoundType.ENGINE_LO, this.engineSounds.get(AudioManager.SoundType.ENGINE_LO)).setVolume(0f);
+                    if (engineSounds.containsKey(AudioManager.SoundType.ENGINE_HI))
+                        playEngineSound(SOUND_MANAGER, this, AudioManager.SoundType.ENGINE_HI, this.engineSounds.get(AudioManager.SoundType.ENGINE_HI)).setVolume(0f);
                 }
             }
         }
     }
+
+    @Override
+    public boolean isColliding(BlockPos blockPos, BlockState blockState) {
+        // Get the block's VoxelShape
+        VoxelShape blockShape = blockState.getCollisionShape(this.level(), blockPos);
+
+        // Iterate over the block's AABBs
+        for (AABB box : blockShape.toAabbs()) {
+            // Translate the block's AABB to world position
+            AABB worldBox = box.move(blockPos.getX(), blockPos.getY(), blockPos.getZ());
+
+            // Compute the center of the worldBox
+            Vec3 blockCenter = new Vec3(
+                    (worldBox.minX + worldBox.maxX) / 2.0,
+                    (worldBox.minY + worldBox.maxY) / 2.0,
+                    (worldBox.minZ + worldBox.maxZ) / 2.0
+            );
+
+            // Create an OBB for the block, assuming axis-aligned (identity rotation)
+            OBB blockOBB = new OBB(
+                    blockCenter.toVector3f(),
+                    new Vector3f(
+                            (float) (box.getXsize() / 2.0),
+                            (float) (box.getYsize() / 2.0),
+                            (float) (box.getZsize() / 2.0)
+                    ),
+                    new Quaternionf() // Blocks are axis-aligned, no rotation
+            );
+
+            // Check collision between entity's OBB and block's OBB
+            if (actualCollision.intersects(blockOBB)) return true;
+        }
+
+        // No collision detected
+        return false;
+    }
+
 
     public void setThrottle(float power) {
         this.throttle = power;
@@ -365,13 +431,22 @@ public abstract class AbstractVehicle extends Entity {
             double d6 = Mth.wrapDegrees(this.lerpYRot - (double) this.getYRot());
             double d8 = Mth.wrapDegrees(this.lerpXRot - (double) this.getXRot());
             float yRot = this.getYRot() + (float) d6 / (float) this.lerpSteps;
-            float xRot = this.getXRot() + (float) d8 / (float) this.lerpSteps;
+            float xRot = (float) this.lerpXRot;
             --this.lerpSteps;
             this.setPos(d0, d2, d4);
             if (!Float.isNaN(xRot)) this.setXRot(xRot);
             if (!Float.isNaN(yRot)) this.setYRot(yRot);
         }
     }
+
+//    @Override
+//    protected @NotNull AABB makeBoundingBox() {
+//        if (collision == null) return new AABB(-.1,-.1,-.1,.1,.1,.1).move(this.position());
+//        Vec3 start = rotateVectorToEntitySpace(new Vec3(collision.minX, collision.minY, collision.minZ), this);
+//        Vec3 end = rotateVectorToEntitySpace(new Vec3(collision.maxX, collision.maxY, collision.maxZ), this);
+//        AABB positionedAABB = new AABB(start.add(this.position()), end.add(this.position()));
+//        return positionedAABB;
+//    }
 
     protected void updateCamera(double deltaTime) {
         Entity camera = Minecraft.getInstance().cameraEntity;
@@ -384,53 +459,75 @@ public abstract class AbstractVehicle extends Entity {
         camera.setYRot(MathUtils.fInterpToExp(camera.getYRot(), this.getYRot(), 3f, (float) deltaTime));
     }
 
-    protected boolean isCollidingWithBlocks(BlockPos pos, AABB aabb) {
-        return aabb.intersects(new AABB(pos)) && !getBlockAtPos(pos).isAir();
-    }
+    @Override
+    public void move(MoverType type, Vec3 movement) {
+        if (!this.level().isClientSide) {
+            // Start with the desired movement vector
+            Vec3 desiredMovement = movement;
 
-    // Overriding the move method, because 'collide' is private
-    // 99% of this is unchanged, except for the 'this.collide()' call
+            // Calculate the new position based on movement
+            Vec3 newPosition = this.position().add(desiredMovement);
 
-    protected BlockState getBlockAtPos(BlockPos pos) {
-        return this.level().getBlockState(pos);
-    }
+            // Update the OBB with the new position
+            OBB futureOBB = new OBB(
+                    newPosition.toVector3f().add(this.collisionBounds.getCentre()),
+                    this.collisionBounds.getHalfSize(),
+                    new Quaternionf().rotationXYZ((float) Math.toRadians(-this.getXRot()), (float) Math.toRadians(-this.getYRot()), (float) Math.toRadians(-this.getZRot()))
+            );
 
-    private Vec3 doCollide(Vec3 motion) {
-        double d1 = motion.x;
-        double d2 = motion.y;
-        double d3 = motion.z;
-        for (AABB aabb : collision) {
-            Vec3 checkedMotion = doCollisionCheckForAABB(aabb, motion);
-            if (checkedMotion.x == 0) d1 = 0;
-            if (checkedMotion.y == 0) d2 = 0;
-            if (checkedMotion.z == 0) d3 = 0;
+            // Check for collisions with blocks and entities
+            List<OBB> collidingOBBs = getCollidingOBBs(desiredMovement, futureOBB);
+
+            if (!collidingOBBs.isEmpty()) {
+                onHit(collidingOBBs, desiredMovement);
+                desiredMovement = Vec3.ZERO;
+                this.velocity = Vec3.ZERO;
+            }
+
+            // Apply the resolved movement to the entity
+            this.setPos(this.position().add(desiredMovement));
+
+            // Update the OBB to reflect the new position
+            this.actualCollision = new OBB(
+                    this.position().toVector3f().add(this.collisionBounds.getCentre()),
+                    this.collisionBounds.getHalfSize(),
+                    new Quaternionf().rotationXYZ((float) Math.toRadians(-this.getXRot()), (float) Math.toRadians(-this.getYRot()), (float) Math.toRadians(-this.getZRot()))
+            );
         }
-        return new Vec3(d1 == 0 ? 0 : motion.x, d2 == 0 ? 0 : motion.y, d3 == 0 ? 0 : motion.z);
     }
 
-    private Vec3 doCollisionCheckForAABB(AABB aabb, Vec3 motion) {
-        List<VoxelShape> list = this.level().getEntityCollisions(this, aabb.expandTowards(motion));
-        Vec3 vec3 = motion.lengthSqr() == 0.0D ? motion : collideBoundingBox(this, motion, aabb, this.level(), list);
-        boolean flag = motion.x != vec3.x;
-        boolean flag1 = motion.y != vec3.y;
-        boolean flag2 = motion.z != vec3.z;
-        boolean flag3 = this.onGround() || flag1 && motion.y < 0.0D;
-        float stepHeight = getStepHeight();
-        if (stepHeight > 0.0F && flag3 && (flag || flag2)) {
-            Vec3 vec31 = collideBoundingBox(this, new Vec3(motion.x, stepHeight, motion.z), aabb, this.level(), list);
-            Vec3 vec32 = collideBoundingBox(this, new Vec3(0.0D, stepHeight, 0.0D), aabb.expandTowards(motion.x, 0.0D, motion.z), this.level(), list);
-            if (vec32.y < (double) stepHeight) {
-                Vec3 vec33 = collideBoundingBox(this, new Vec3(motion.x, 0.0D, motion.z), aabb.move(vec32), this.level(), list).add(vec32);
-                if (vec33.horizontalDistanceSqr() > vec31.horizontalDistanceSqr()) {
-                    vec31 = vec33;
+    protected abstract void onHit(List<OBB> collidingOBBs, Vec3 desiredMovement);
+
+    private List<OBB> getCollidingOBBs(Vec3 movement, OBB futureOBB) {
+        List<OBB> collidingOBBs = new ArrayList<>();
+
+//        for (Entity entity : this.level().getEntities(this, futureOBB.toAABB())) {
+//            if (entity instanceof AbstractVehicle other && other.getActualCollision() != null) {
+//                if (futureOBB.intersects(other.getActualCollision())) {
+//                    collidingOBBs.add(other.getActualCollision());
+//                    other.move(MoverType.PLAYER, movement);
+//                }
+//            }
+//        }
+
+        BlockPos startPoint = this.blockPosition().offset((int) (-4 * collisionBounds.getHalfSize().x), (int) (-4 * collisionBounds.getHalfSize().y), (int) (-4 * collisionBounds.getHalfSize().z));
+        BlockPos endPoint = this.blockPosition().offset((int) (4 * collisionBounds.getHalfSize().x), (int) (4 * collisionBounds.getHalfSize().y), (int) (4 * collisionBounds.getHalfSize().z));
+
+        for (BlockPos pos : BlockPos.betweenClosed(startPoint, endPoint)) {
+            BlockState state = level().getBlockState(pos);
+            // You can check for specific block types or handle all blocks
+            if (state.getCollisionShape(level(), pos).isEmpty()) {
+                continue;  // No collision if the block shape is empty
+            }
+
+            for (AABB aabb : state.getCollisionShape(level(), pos).toAabbs()) {
+                OBB blockOBB = OBB.fromAABB(aabb.move(pos));
+                if (futureOBB.intersects(blockOBB)) {
+                    collidingOBBs.add(blockOBB);
                 }
             }
-
-            if (vec31.horizontalDistanceSqr() > vec3.horizontalDistanceSqr()) {
-                return vec31.add(collideBoundingBox(this, new Vec3(0.0D, -vec31.y + motion.y, 0.0D), aabb.move(vec31), this.level(), list));
-            }
         }
 
-        return vec3;
+        return collidingOBBs;
     }
 }

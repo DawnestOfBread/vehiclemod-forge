@@ -2,13 +2,15 @@ package com.dawnestofbread.vehiclemod.vehicles.entities;
 
 import com.dawnestofbread.vehiclemod.WheeledVehicle;
 import com.dawnestofbread.vehiclemod.client.audio.AudioManager;
+import com.dawnestofbread.vehiclemod.collision.OBB;
 import com.dawnestofbread.vehiclemod.utils.Curve;
 import com.dawnestofbread.vehiclemod.utils.Seat;
 import com.dawnestofbread.vehiclemod.utils.Wheel;
 import net.minecraft.world.entity.*;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 import java.util.*;
 
@@ -25,9 +27,7 @@ public class Annihilator extends WheeledVehicle {
         SeatManager.add(2,UUID.fromString("00000000-0000-0000-0000-000000000000"));
         SeatManager.add(3,UUID.fromString("00000000-0000-0000-0000-000000000000"));
 
-        // WIP Set up collision boxes
-        this.collision = new AABB[1];
-        this.collision[0] = new AABB(-2.0625,0.75,-5.125, 2.0625,2.6875,0.5);
+        collisionBounds = new OBB(new Vector3f(0,0.9375f,0.03125f), new Vector3f(1,0.46875f,2.59375f), new Quaternionf());
 
         // Some values required for maths; when getting them from Blockbench, divide the value by 8!
         this.rearAxle = new Vec3(0, 0.838125, -3.004375);

@@ -3,6 +3,7 @@ package com.dawnestofbread.vehiclemod;
 import com.dawnestofbread.vehiclemod.client.audio.AudioManager;
 import com.dawnestofbread.vehiclemod.client.audio.SimpleEngineSound;
 import com.dawnestofbread.vehiclemod.client.effects.SurfaceHelper;
+import com.dawnestofbread.vehiclemod.collision.OBB;
 import com.dawnestofbread.vehiclemod.utils.Curve;
 import com.dawnestofbread.vehiclemod.utils.HitResult;
 import com.dawnestofbread.vehiclemod.utils.VectorUtils;
@@ -28,9 +29,13 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.slf4j.Logger;
 
-import java.util.*;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
-import static com.dawnestofbread.vehiclemod.client.audio.AudioManager.*;
+import static com.dawnestofbread.vehiclemod.client.audio.AudioManager.SoundType;
+import static com.dawnestofbread.vehiclemod.client.audio.AudioManager.calculateVolume;
 import static com.dawnestofbread.vehiclemod.utils.LineTrace.lineTraceByType;
 import static com.dawnestofbread.vehiclemod.utils.MathUtils.*;
 import static com.dawnestofbread.vehiclemod.utils.VectorUtils.rotateVectorToEntitySpace;
@@ -63,14 +68,13 @@ public abstract class WheeledVehicle extends AbstractVehicle {
     protected double corneringStiffness;
     protected double driveWheelAngularVelocity;
     protected int driveWheelReferenceIndex;
-    protected double engineForceMultiplier;
     protected double engineTorque, driveTorque;
     protected Vec3[] exhaust;
     protected double exhaustFumeAmount;
     protected double forwardSpeed;
     protected Vec3 forwardVelocity = new Vec3(0, 0, 0);
     protected double[] gearRatios;
-    protected double idleRPM, shiftUpRPM, shiftDownRPM, maxRPM, engineForce;
+    protected double idleRPM, shiftUpRPM, shiftDownRPM, maxRPM;
     protected double movementDirection;
     protected double slipRatio;
     protected double steeringDelta, circleRadius;
@@ -215,19 +219,19 @@ public abstract class WheeledVehicle extends AbstractVehicle {
             steering = steeringEasing(steering, steeringInput, (float) deltaTime);
             if (!this.level().isClientSide) {
                 simulateVehicleServer(deltaTime);
+                updateVehicleRotation(deltaTime);
 
-                this.move(MoverType.SELF, velocity.add(this.onGround() ? Vec3.ZERO : gravitationalAcceleration).scale(deltaTime));
+                this.move(MoverType.SELF, velocity.scale(deltaTime));
+                if (!this.onGround()) this.move(MoverType.SELF, gravitationalAcceleration.scale(deltaTime));
 
                 Vec3 rotationPivot = calculateMidpointStart(Wheels.stream().filter(wheel -> !getTurningWheels().contains(wheel)).toList()).multiply(.5, .5, -.5);
-                this.setPos(this.position().subtract(rotateVectorToEntitySpace(rotationPivot, this)));
-
+                this.move(MoverType.SELF, rotateVectorToEntitySpace(rotationPivot.reverse(), this));
                 double yawVelocity = (float) ((angularVelocity * deltaTime) * -movementDirection);
                 if (!Double.isNaN(yawVelocity)) this.turn(yawVelocity, 0);
-                this.setPos(this.position().add(rotateVectorToEntitySpace(rotationPivot, this)));
+                this.move(MoverType.SELF, rotateVectorToEntitySpace(rotationPivot, this));
 
             } else {
                 simulateVehicleClient(deltaTime);
-                updateVehicleRotation(deltaTime);
             }
             accumulatedTime -= timeStep;
         }
@@ -235,7 +239,6 @@ public abstract class WheeledVehicle extends AbstractVehicle {
 
     protected void simulateVehicleServer(double deltaTime) {
         Wheel driveWheel = Wheels.get(driveWheelReferenceIndex);
-        engineForce = throttle * engineForceMultiplier;
 
         forward = new Vec3(0, 0, 1);
         forwardSpeed = forwardVelocity.length();
@@ -289,8 +292,15 @@ public abstract class WheeledVehicle extends AbstractVehicle {
         steeringDelta = steeringAngle * steering;
         circleRadius = wheelBase / Math.tan(Math.toRadians(-steeringDelta));
         angularVelocity = forwardSpeed / circleRadius / ((Mth.PI / 180) / 10);
-        angularVelocity *= traction;
-        angularVelocity *= Math.max(handbrake + .5, 1);
+        // Scale angular velocity based on how many wheels are on the ground, traction, handbrake
+        if (this.onGround()) {
+            angularVelocity *= traction;
+            angularVelocity *= Math.max(handbrake + .5, 1);
+            angularVelocity *= (double) getWheelsOnGround(getTurningWheels()).size() / getTurningWheels().size();
+        } else {
+            // Air control
+            angularVelocity *= .1;
+        }
 
         // Drifting mechanics
         double driftIntensity = Math.min(forwardSpeed / 40, 1.0);
@@ -351,10 +361,13 @@ public abstract class WheeledVehicle extends AbstractVehicle {
         if (!(Wheels.size() > 0)) return;
         if (Wheels.get(wheelIndex) == null) return;
         Wheel wheel = Wheels.get(wheelIndex);
+        updateWheelCommon(wheel, deltaTime);
+    }
 
+    protected void updateWheelCommon(Wheel wheel, double deltaTime) {
         HitResult wheelTrace = checkWheelOnGroundRaycast(wheel);
         wheel.onGround = wheelTrace.hit();
-        wheel.springLength = wheelTrace.hit() ? wheelTrace.getDistance() - wheel.springMinLength - wheel.radius : wheel.springMaxLength;
+        wheel.springLength = wheelTrace.hit() ? wheelTrace.getDistance() - wheel.springMinLength - wheel.radius : wheel.springMaxLength - wheel.radius;
         wheel.currentRelativePosition = rotateVectorToEntitySpace(wheel.startingRelativePosition.scale(.5).add(0, -wheel.springLength, 0), this);
     }
 
@@ -392,7 +405,7 @@ public abstract class WheeledVehicle extends AbstractVehicle {
         SimpleEngineSound movingSound = soundMap.get(SoundType.ENGINE_MOVING);
         SimpleEngineSound loSound = soundMap.get(SoundType.ENGINE_LO);
         SimpleEngineSound hiSound = soundMap.get(SoundType.ENGINE_HI);
-        // Fake RPM when drifting
+        // Fake RPM while drifting
         float RPM = (float) (this.RPM * Mth.clamp(1.5 - traction, 1, 1.5));
         if (idleSound != null)
             idleSound.setVolume(calculateVolume(RPM, 0, idleRPM + 1000)).setPitch(mapDoubleRangeClamped(RPM, idleRPM, idleRPM + 1500, 1, 1.4));
@@ -412,7 +425,7 @@ public abstract class WheeledVehicle extends AbstractVehicle {
             for (Vec3 pos : exhaust) {
                 for (int i = 0; i < Math.ceil(RPM / 300); i++) {
                     Vec3 p = position().add(pos.xRot(this.getXRot()).yRot((float) Math.toRadians(-this.getYRot())).scale(.5));
-                    Vec3 vel = forward.scale(-movementDirection / 8).add(0, -.05, 0);
+                    Vec3 vel = forward.scale(-forwardSpeed / 20).add(0, -.05, 0);
 
                     double probability = exhaustFumeAmount;
                     double result = Math.random();
@@ -437,17 +450,14 @@ public abstract class WheeledVehicle extends AbstractVehicle {
         if (Wheels.get(wheelIndex) == null) return;
         Wheel wheel = Wheels.get(wheelIndex);
 
-        HitResult wheelTrace = checkWheelOnGroundRaycast(wheel);
-        wheel.onGround = wheelTrace.hit();
-        wheel.springLength = wheelTrace.hit() ? wheelTrace.getDistance() - wheel.springMinLength - wheel.radius : wheel.springMaxLength;
-        wheel.currentRelativePosition = wheel.startingRelativePosition.scale(.5).add(0, -wheel.springLength, 0).yRot(-this.getYRot() * ((float) Math.PI / 180F));
+        updateWheelCommon(wheel, deltaTime);
 
         if (wheel.affectedByEngine) {
             wheel.angularVelocity = forwardSpeed / wheel.radius;
         } else if (wheel.onGround) {
             wheel.angularVelocity = forwardSpeed / wheel.radius;
             if (wheel.affectedBySteering) angularVelocity /= steering * steeringAngle;
-        } else wheel.angularVelocity *= 0.99;
+        } else wheel.angularVelocity *= .9;
         if (wheel.affectedByHandbrake & handbrake > 0f)
             wheel.angularVelocity = 0;
 
@@ -503,6 +513,11 @@ public abstract class WheeledVehicle extends AbstractVehicle {
         double vehicleY = minY + baseHeight;
 
         setXRot((float) Math.toDegrees(pitch));
+    }
+
+    @Override
+    protected void onHit(List<OBB> collidingOBBs, Vec3 desiredMovement) {
+        this.velocity = Vec3.ZERO;
     }
 
     public Vec3 calculateMidpointWorld(List<Wheel> wheels) {
